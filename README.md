@@ -6,7 +6,7 @@ A gorgeous, developer-centric interface for talking to LLMs with **agentic tool 
 
 - **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), persist facts to memory (`store_value`/`read_value`), and compact conversation history (`compact`)
 - **Persistent LLM Memory**: Per-conversation localStorage namespace — the model can save/read/list/delete key-value data across turns
-- **Conversation Compaction**: Both an LLM tool and a user `/compact` command to summarize long conversations and free context window space
+- **Conversation Commands**: `/compact` to summarize & trim history (also an LLM tool), `/clear` to reset messages while keeping system prompt
 - **Multiple Teaching Personas**: General Assistant, Explain Like I'm 10, Deep Dive Expert, First Principles Thinker, Socratic Tutor, and Custom System Prompt
 - **Configurable API Settings**: Proxy URL, Tool Fetch URL, API Key, Model Selection, and Turns Limit
 - **Chat Management**: Create, rename, export, and clear conversations
@@ -70,13 +70,14 @@ Create your own custom persona with personalized instructions.
 .
 ├── index.html        # Main application page
 ├── style.css         # Styling
-├── constants.js      # Personas, tool definitions, state vars, DOM refs
-├── utils.js          # Markdown rendering, sanitization, code highlighting
-├── storage.js        # Per-conversation localStorage helpers for LLM tools
-├── chat.js           # Chat CRUD, rendering, message actions, input UI state
-├── tools.js          # Tool execution (fetch_url, store/read, compact) + UI
-├── sender.js         # API sending, agent loop, /compact command
-├── events.js         # Event listeners + initialization
+├── js/               # JavaScript modules (see below)
+│   ├── constants.js  # Personas, tool definitions, state vars, DOM refs
+│   ├── utils.js      # Markdown rendering, sanitization, code highlighting
+│   ├── storage.js    # Per-conversation localStorage helpers for LLM tools
+│   ├── chat.js       # Chat CRUD, rendering, message actions, input UI state
+│   ├── tools.js      # Tool execution (fetch_url, store/read, compact) + UI
+│   ├── sender.js     # API sending, agent loop, /compact, /clear commands
+│   └── events.js     # Event listeners + initialization
 ├── fetch_url.php     # CORS proxy for tool fetch calls
 ├── README.md         # This file
 └── LICENSE           # License

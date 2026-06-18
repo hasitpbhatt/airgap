@@ -884,6 +884,22 @@ body {
   40% { transform: scale(1.0); }
 }
 
+/* System / Notice Rows (e.g. /compact notice) */
+.message-row.system .message-bubble {
+  font-size: 0.82rem;
+  font-style: italic;
+  border-style: solid;
+}
+
+/* Command hint below textarea */
+.command-hint {
+  font-size: 0.72rem;
+  color: hsl(var(--text-muted) / 0.45);
+  padding: 0.15rem 0.25rem 0;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
 /* Tool Call Bubbles (Agentic) */
 .message-row.tool-call {
   justify-content: flex-start;

@@ -5,11 +5,24 @@ function triggerSend() {
 
   if (!text || !activeChat || isGenerating) return;
 
-  // Handle /compact command
+  // Handle commands
   if (text === '/compact') {
     elements.chatTextarea.value = '';
     handleTextareaAutoGrow();
     triggerCompact();
+    return;
+  }
+  if (text === '/clear') {
+    if (!activeChat) return;
+    activeChat.messages = [
+      { role: 'system', content: activeChat.systemPrompt }
+    ];
+    activeChat.turnCount = 0;
+    elements.chatTextarea.value = '';
+    handleTextareaAutoGrow();
+    saveChats();
+    renderChatFeed();
+    updateInputUIState();
     return;
   }
 
