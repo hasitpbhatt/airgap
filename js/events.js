@@ -25,10 +25,25 @@ function init() {
     settings.proxyUrl = MISTRAL_PROXY_URL;
   }
 
+  // URL param injection: ?key=sk-... sets API key without showing in UI
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlKey = urlParams.get('key');
+  if (urlKey) {
+    settings.apiKey = urlKey;
+    settings.injectedKey = true;
+    saveSettings();
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+  }
+
   // Bind settings to UI
   elements.proxyUrlInput.value = settings.proxyUrl;
   if (elements.fetchUrlInput) elements.fetchUrlInput.value = settings.fetchUrl;
-  elements.apiKeyInput.value = settings.apiKey;
+  if (settings.injectedKey) {
+    elements.apiKeyInput.placeholder = 'Key set from URL';
+    elements.apiKeyInput.value = '';
+  } else {
+    elements.apiKeyInput.value = settings.apiKey;
+  }
 
   const MODEL_PRESETS = ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest', 'codestral-latest'];
   const isPreset = MODEL_PRESETS.includes(settings.modelName);
@@ -134,6 +149,10 @@ function setupEventListeners() {
   }
   elements.apiKeyInput.addEventListener('input', (e) => {
     settings.apiKey = e.target.value.trim();
+    if (settings.injectedKey && e.target.value.trim()) {
+      settings.injectedKey = false;
+      e.target.placeholder = '';
+    }
     saveSettings();
   });
   elements.modelSelect.addEventListener('change', (e) => {

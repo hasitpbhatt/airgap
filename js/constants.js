@@ -221,6 +221,7 @@ let settings = {
   proxyUrl: 'https://api.mistral.ai/v1/chat/completions',
   fetchUrl: '',
   apiKey: '',
+  injectedKey: false,
   modelName: 'mistral-small-latest',
   useMaxTurns: false,
   maxTurns: 5,
