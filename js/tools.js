@@ -276,6 +276,124 @@ async function executeToolCall(toolCall) {
     }
   }
 
+  if (name === 'send_notification') {
+    if (!('Notification' in window)) {
+      return { error: 'Notifications not supported in this browser' };
+    }
+    if (Notification.permission === 'denied') {
+      return { error: 'Notification permission was denied' };
+    }
+    if (Notification.permission === 'default') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        return { error: 'Notification permission not granted' };
+      }
+    }
+    new Notification(args.title || 'Notification', { body: args.body || '' });
+    return { success: true, title: args.title, body: args.body };
+  }
+
+  if (name === 'notes_create') {
+    try {
+      noteStoreSet(args.key, args.content);
+      return { success: true, key: args.key };
+    } catch (err) { return { error: err.message }; }
+  }
+
+  if (name === 'notes_read') {
+    try {
+      const val = noteStoreGet(args.key);
+      if (val === null) return { error: 'Note not found: ' + args.key };
+      return { key: args.key, content: val };
+    } catch (err) { return { error: err.message }; }
+  }
+
+  if (name === 'notes_list') {
+    try {
+      const allKeys = noteStoreListKeys();
+      if (allKeys.length === 0) return { result: 'No notes yet.' };
+      const query = (args.query || '').toLowerCase();
+      const matches = query ? allKeys.filter(k => k.toLowerCase().includes(query)) : allKeys;
+      if (matches.length === 0) return { result: 'No notes matching: ' + args.query, all_keys: allKeys };
+      const notes = {};
+      matches.forEach(k => { notes[k] = (noteStoreGet(k) || '').substring(0, 200); });
+      return { notes: notes, count: matches.length };
+    } catch (err) { return { error: err.message }; }
+  }
+
+  if (name === 'notes_delete') {
+    try {
+      noteStoreDelete(args.key);
+      return { success: true, key: args.key };
+    } catch (err) { return { error: err.message }; }
+  }
+
+  if (name === 'set_setting') {
+    const key = args.key;
+    const value = args.value;
+    if (key === 'proxyUrl') {
+      settings.proxyUrl = value;
+      elements.proxyUrlInput.value = value;
+    } else if (key === 'modelName') {
+      settings.modelName = value;
+      elements.modelNameInput.value = value;
+      // Select "custom" if the model name doesn't match a preset option
+      var customFound = false;
+      var opts = elements.modelSelect.options;
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === value) {
+          elements.modelSelect.value = value;
+          customFound = true;
+          break;
+        }
+      }
+      if (!customFound) {
+        elements.modelSelect.value = 'custom';
+        elements.modelNameInput.value = value;
+        elements.modelNameInput.disabled = false;
+      }
+    } else if (key === 'persona') {
+      if (PERSONAS[value]) {
+        settings.currentPersona = value;
+        elements.personaSelect.value = value;
+        if (value === 'custom') {
+          elements.systemPromptTextarea.value = settings.customSystemPrompt || '';
+          elements.systemPromptTextarea.disabled = false;
+        } else {
+          elements.systemPromptTextarea.value = PERSONAS[value].system;
+          elements.systemPromptTextarea.disabled = true;
+        }
+      }
+    }
+    saveSettings();
+    return { success: true, key: key, value: value };
+  }
+
+  if (name === 'clipboard_write') {
+    const clipId = 'clip-' + toolCall.id;
+    pendingClipboard.push({ toolCallId: toolCall.id, clipId, text: args.text || '' });
+    return { success: true, length: (args.text || '').length };
+  }
+
+  if (name === 'generate_chart') {
+    const chartConfig = {
+      type: args.type || 'bar',
+      title: args.title || '',
+      labels: args.labels || [],
+      datasets: args.datasets || []
+    };
+    pendingCharts.push({ toolCallId: toolCall.id, config: chartConfig });
+    return { success: true, type: chartConfig.type, title: chartConfig.title, dataPoints: chartConfig.labels.length };
+  }
+
+  if (name === 'save_file') {
+    const filename = args.filename || 'download.txt';
+    const content = args.content || '';
+    const fileId = 'file-' + toolCall.id;
+    pendingDownloads.push({ toolCallId: toolCall.id, fileId, filename, content });
+    return { success: true, filename, size: content.length };
+  }
+
   if (name === 'read_rss') {
     try {
       const fetchUrl = settings.fetchUrl || 'fetch_url.php';
@@ -391,6 +509,64 @@ function appendToolCallUI(toolCall) {
         </div>
       </div>
     `;
+  } else if (name === 'send_notification') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble"><div class="msg-content"><i data-lucide="bell" style="width: 14px; height: 14px; vertical-align: middle;"></i><span class="tool-call-label">Sending notification...</span><span class="tool-call-status">...</span></div></div>';
+  } else if (name === 'notes_create') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble"><div class="msg-content"><i data-lucide="file-text" style="width: 14px; height: 14px; vertical-align: middle;"></i><span class="tool-call-label">Saving note...</span><span class="tool-call-status">...</span></div></div>';
+  } else if (name === 'notes_read') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble"><div class="msg-content"><i data-lucide="file-text" style="width: 14px; height: 14px; vertical-align: middle;"></i><span class="tool-call-label">Reading note...</span><span class="tool-call-status">...</span></div></div>';
+  } else if (name === 'notes_list') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble"><div class="msg-content"><i data-lucide="list" style="width: 14px; height: 14px; vertical-align: middle;"></i><span class="tool-call-label">Listing notes...</span><span class="tool-call-status">...</span></div></div>';
+  } else if (name === 'notes_delete') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble"><div class="msg-content"><i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle;"></i><span class="tool-call-label">Deleting note...</span><span class="tool-call-status">...</span></div></div>';
+  } else if (name === 'set_setting') {
+    let key = '';
+    try { key = JSON.parse(argsRaw).key || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="settings" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Changing ${escapeHtml(key)}...</span>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'clipboard_write') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="clipboard" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Copying to clipboard...</span>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'generate_chart') {
+    let title = '';
+    try { title = JSON.parse(argsRaw).title || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="bar-chart-3" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Generating chart:</span>
+          <code class="tool-call-url">${escapeHtml(title)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'save_file') {
+    let filename = '';
+    try { filename = JSON.parse(argsRaw).filename || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="download" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Saving:</span>
+          <code class="tool-call-url">${escapeHtml(filename)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
   } else if (name === 'read_rss') {
     let url = '';
     try { url = JSON.parse(argsRaw).url || argsRaw; } catch { url = argsRaw; }
@@ -494,6 +670,78 @@ function updateToolCallUI(toolCall, result) {
         </div>
       </div>
     `;
+  } else if (name === 'send_notification') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble tool-call-done"><div class="msg-content"><i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i><span class="tool-call-label">Notification sent</span><span class="tool-call-detail">' + escapeHtml(result.title) + '</span></div></div>';
+  } else if (name === 'notes_create') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble tool-call-done"><div class="msg-content"><i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i><span class="tool-call-label">Note saved:</span><code class="tool-call-url">' + escapeHtml(result.key) + '</code></div></div>';
+  } else if (name === 'notes_read') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble tool-call-done"><div class="msg-content" style="flex-direction:column;align-items:stretch;"><div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem;"><i data-lucide="file-text" style="width:14px;height:14px;flex-shrink:0;color:hsl(var(--success));"></i><span class="tool-call-label">Note:</span><code class="tool-call-url">' + escapeHtml(result.key) + '</code></div><pre style="font-size:0.7rem;white-space:pre-wrap;word-break:break-word;background:hsl(var(--bg-subtle));padding:0.35rem;border-radius:0.25rem;margin:0;max-height:200px;overflow-y:auto;color:hsl(var(--text-secondary));">' + escapeHtml(result.content) + '</pre></div></div>';
+  } else if (name === 'notes_list') {
+    var noteSummary = result.notes ? Object.keys(result.notes).map(function (k) { return k + ': ' + (result.notes[k] || '').substring(0, 80); }).join('\n') : (result.result || 'No results');
+    row.innerHTML = '<div class="message-bubble tool-call-bubble tool-call-done"><div class="msg-content" style="flex-direction:column;align-items:stretch;"><div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem;"><i data-lucide="check-circle" style="width:14px;height:14px;flex-shrink:0;color:hsl(var(--success));"></i><span class="tool-call-label">Notes:</span><span class="tool-call-detail">' + (result.count || 0) + ' found</span></div><pre style="font-size:0.7rem;white-space:pre-wrap;word-break:break-word;background:hsl(var(--bg-subtle));padding:0.35rem;border-radius:0.25rem;margin:0;max-height:200px;overflow-y:auto;color:hsl(var(--text-secondary));">' + escapeHtml(noteSummary) + '</pre></div></div>';
+  } else if (name === 'notes_delete') {
+    row.innerHTML = '<div class="message-bubble tool-call-bubble tool-call-done"><div class="msg-content"><i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i><span class="tool-call-label">Note deleted:</span><code class="tool-call-url">' + escapeHtml(result.key) + '</code></div></div>';
+  } else if (name === 'set_setting') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Setting changed:</span>
+          <code class="tool-call-url">${escapeHtml(result.key)}</code>
+          <span class="tool-call-detail">= ${escapeHtml((result.value || '').substring(0, 50))}</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'clipboard_write') {
+    const clipId = 'clip-' + toolCall.id;
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Clipboard:</span>
+          <span class="tool-call-detail">${result.length} chars</span>
+          <button class="btn-clipboard-copy" data-clip-id="${clipId}">
+            <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+            Click to copy
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (name === 'generate_chart') {
+    const chartEntry = pendingCharts.find(d => d.toolCallId === toolCall.id);
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content" style="flex-direction: column; align-items: stretch;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+            <i data-lucide="check-circle" style="width: 14px; height: 14px; flex-shrink: 0; color: hsl(var(--success));"></i>
+            <span class="tool-call-label">Chart:</span>
+            <code class="tool-call-url">${escapeHtml(result.title)}</code>
+            <span class="tool-call-detail">(${result.type})</span>
+          </div>
+          <canvas class="chart-canvas" width="280" height="180"></canvas>
+        </div>
+      </div>
+    `;
+    if (chartEntry) {
+      const canvas = row.querySelector('.chart-canvas');
+      if (canvas) drawChart(canvas, chartEntry.config);
+    }
+  } else if (name === 'save_file') {
+    const fileId = 'file-' + toolCall.id;
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">File ready:</span>
+          <code class="tool-call-url">${escapeHtml(result.filename)}</code>
+          <span class="tool-call-detail">(${result.size} bytes)</span>
+          <button class="btn-download-file" data-file-id="${fileId}">
+            <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+            Download
+          </button>
+        </div>
+      </div>
+    `;
   } else if (name === 'read_rss') {
     const feedTitle = result.feed_title || 'Feed';
     row.innerHTML = `
@@ -508,6 +756,11 @@ function updateToolCallUI(toolCall, result) {
     `;
   } else {
     const doneLabels = {
+      send_notification: 'Notification sent',
+      notes_create: 'Note saved',
+      notes_read: 'Note read',
+      notes_list: 'Notes listed',
+      notes_delete: 'Note deleted',
       remember: 'Memory stored',
       recall: 'Memory recalled',
       forget: 'Memory deleted',
@@ -526,4 +779,163 @@ function updateToolCallUI(toolCall, result) {
 
   scrollToBottom();
   lucide.createIcons();
+}
+
+function drawChart(canvas, config) {
+  const ctx = canvas.getContext('2d');
+  const { type, title, labels, datasets } = config;
+  const w = canvas.width;
+  const h = canvas.height;
+  const pad = { top: 28, bottom: 36, left: 44, right: 12 };
+  const colors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'];
+  const textColor = '#a1a1aa';
+  const axisColor = 'rgba(255,255,255,0.12)';
+  function getColor(i) { return colors[i % colors.length]; }
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (title) {
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(title, w / 2, 4);
+  }
+
+  if (!labels || labels.length === 0) {
+    ctx.fillStyle = textColor;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data', w / 2, h / 2);
+    return;
+  }
+
+  if (type === 'pie') {
+    const cx = w / 2;
+    const cy = h / 2 + 6;
+    const radius = Math.min(w / 2 - 28, h / 2 - 34);
+    const dataset = datasets && datasets[0] ? datasets[0].data : [];
+    const total = dataset.reduce(function (s, v) { return s + v; }, 0);
+    if (total === 0) {
+      ctx.fillStyle = textColor;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data', cx, cy);
+      return;
+    }
+    var startAngle = -Math.PI / 2;
+    dataset.forEach(function (val, i) {
+      if (val <= 0) return;
+      var sliceAngle = (val / total) * 2 * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+      ctx.closePath();
+      ctx.fillStyle = getColor(i);
+      ctx.fill();
+      if (sliceAngle > 0.25) {
+        var midAngle = startAngle + sliceAngle / 2;
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Math.round(val / total * 100) + '%', cx + Math.cos(midAngle) * (radius * 0.6), cy + Math.sin(midAngle) * (radius * 0.6));
+      }
+      startAngle += sliceAngle;
+    });
+    return;
+  }
+
+  var left = pad.left;
+  var right = w - pad.right;
+  var top = pad.top + 4;
+  var bottom = h - pad.bottom;
+  var cw = right - left;
+  var ch = bottom - top;
+
+  ctx.strokeStyle = axisColor;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, bottom);
+  ctx.stroke();
+
+  var maxVal = 0;
+  datasets.forEach(function (ds) {
+    ds.data.forEach(function (v) {
+      if (v > maxVal) maxVal = v;
+    });
+  });
+  if (maxVal === 0) maxVal = 1;
+  maxVal = Math.ceil(maxVal * 1.1);
+
+  ctx.fillStyle = textColor;
+  ctx.font = '8px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  var ySteps = 4;
+  for (var i = 0; i <= ySteps; i++) {
+    var val = (maxVal / ySteps) * i;
+    var y = bottom - (val / maxVal) * ch;
+    ctx.fillText(Math.round(val), left - 3, y);
+    ctx.strokeStyle = axisColor;
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.stroke();
+  }
+
+  if (type === 'bar') {
+    var n = labels.length;
+    var groupW = cw / n;
+    var barW = groupW * 0.6;
+    var gapW = groupW * 0.4;
+    var dsCount = datasets.length;
+    var itemW = barW / dsCount;
+    labels.forEach(function (label, i) {
+      var groupX = left + i * groupW;
+      ctx.fillStyle = textColor;
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(label, groupX + groupW / 2, bottom + 4);
+      datasets.forEach(function (ds, j) {
+        var val = ds.data[i] || 0;
+        var barH = (val / maxVal) * ch;
+        var x = groupX + gapW / 2 + j * (itemW + 1);
+        ctx.fillStyle = ds.color || getColor(j);
+        ctx.fillRect(x, bottom - barH, itemW, barH);
+      });
+    });
+  } else if (type === 'line') {
+    var n = labels.length;
+    var stepX = n > 1 ? cw / (n - 1) : 0;
+    datasets.forEach(function (ds, j) {
+      ctx.strokeStyle = ds.color || getColor(j);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ds.data.forEach(function (val, i) {
+        var x = left + i * stepX;
+        var y = bottom - (val / maxVal) * ch;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    });
+    labels.forEach(function (label, i) {
+      ctx.fillStyle = textColor;
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(label, left + i * stepX, bottom + 4);
+      datasets.forEach(function (ds, j) {
+        var val = ds.data[i] || 0;
+        var x = left + i * stepX;
+        var y = bottom - (val / maxVal) * ch;
+        ctx.fillStyle = ds.color || getColor(j);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+    });
+  }
 }

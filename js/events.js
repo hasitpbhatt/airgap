@@ -379,6 +379,39 @@ function setupEventListeners() {
     elements.micBtn.classList.add('hidden');
   }
 
+  document.addEventListener('click', (e) => {
+    const clipBtn = e.target.closest('.btn-clipboard-copy');
+    if (clipBtn) {
+      const clipId = clipBtn.dataset.clipId;
+      const entry = pendingClipboard.find(d => d.clipId === clipId);
+      if (entry) {
+        navigator.clipboard.writeText(entry.text).then(function () {
+          clipBtn.innerHTML = '<i data-lucide="check" style="width: 12px; height: 12px;"></i> Copied!';
+          lucide.createIcons();
+        }).catch(function () {
+          clipBtn.innerHTML = '<i data-lucide="x" style="width: 12px; height: 12px;"></i> Failed';
+          lucide.createIcons();
+        });
+      }
+      return;
+    }
+
+    const btn = e.target.closest('.btn-download-file');
+    if (!btn) return;
+    const fileId = btn.dataset.fileId;
+    const entry = pendingDownloads.find(d => d.fileId === fileId);
+    if (!entry) return;
+    const blob = new Blob([entry.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = entry.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
   window.addEventListener('resize', adjustResponsiveLayout);
 }
 

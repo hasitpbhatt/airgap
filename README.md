@@ -83,13 +83,22 @@ Use the **Share link with credential** button in settings to generate one.
 
 When a conversation reaches 15 non-system messages, the agent automatically summarizes and compacts history via `/compact`. Transparent to the user — happens before the next message is sent.
 
-## 15 tools
+## 24 tools
 
 | Tool | Description |
 |------|-------------|
 | `fetch_url` | Fetch any URL via proxy |
 | `search_web` | Parallel search across DuckDuckGo, Brave, Ecosia, Bing |
 | `read_rss` | Parse RSS 2.0 / Atom / RSS 1.0 feeds |
+| `save_file` | Create a file and offer it as a browser download |
+| `generate_chart` | Render a bar, line, or pie chart from data |
+| `clipboard_write` | Write text to the clipboard (triggers on user click) |
+| `send_notification` | Send a system/desktop notification |
+| `set_setting` | Update a chat setting (proxyUrl, modelName, persona) |
+| `notes_create` | Create or overwrite a global note |
+| `notes_read` | Read a single note by key |
+| `notes_list` | List all notes, optionally filtered by query |
+| `notes_delete` | Delete a single note by key |
 | `store_value` | Per-chat persistent key-value storage |
 | `read_value` | Retrieve per-chat stored value |
 | `list_stored_keys` | List all keys in current chat |

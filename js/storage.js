@@ -63,3 +63,36 @@ function globalStoreClear() {
   }
   toRemove.forEach(k => localStorage.removeItem(k));
 }
+
+// Notes storage helpers (global, shared across conversations)
+function noteStoreGet(key) {
+  return localStorage.getItem('note_' + key);
+}
+function noteStoreSet(key, value) {
+  localStorage.setItem('note_' + key, value);
+}
+function noteStoreDelete(key) {
+  localStorage.removeItem('note_' + key);
+}
+function noteStoreListKeys() {
+  const prefix = 'note_';
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith(prefix)) {
+      keys.push(k.slice(prefix.length));
+    }
+  }
+  return keys;
+}
+function noteStoreClear() {
+  const prefix = 'note_';
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith(prefix)) {
+      toRemove.push(k);
+    }
+  }
+  toRemove.forEach(k => localStorage.removeItem(k));
+}

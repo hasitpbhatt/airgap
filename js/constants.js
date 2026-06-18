@@ -212,6 +212,138 @@ const AVAILABLE_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'send_notification',
+      description: 'Send a system/desktop notification to the user. Use this to alert the user about long-running tasks, reminders, or important updates even when they are looking at other tabs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Notification title' },
+          body: { type: 'string', description: 'Optional notification body text' }
+        },
+        required: ['title']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'notes_create',
+      description: 'Create or overwrite a note. Notes are saved globally and persist across conversations — use them for drafting ideas, saving information, or keeping a journal.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'A unique key/name for the note, e.g. "shopping_list", "meeting_notes_2024-01-01"' },
+          content: { type: 'string', description: 'The content of the note' }
+        },
+        required: ['key', 'content']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'notes_read',
+      description: 'Read a single note by its key.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'The key of the note to read' }
+        },
+        required: ['key']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'notes_list',
+      description: 'List all note keys, optionally filtered by a search query. Returns matching keys and their content previews.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Optional search term to filter note keys by (case-insensitive substring match)' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'notes_delete',
+      description: 'Delete a single note by its key.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'The key of the note to delete' }
+        },
+        required: ['key']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_setting',
+      description: 'Update a chat setting: proxyUrl (the LLM API endpoint), modelName (e.g. "mistral-small-latest", "gpt-4"), or persona (one of: "general", "child", "deep", "first-principles", "socratic", "custom").',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', enum: ['proxyUrl', 'modelName', 'persona'], description: 'The setting to change' },
+          value: { type: 'string', description: 'The new value for the setting' }
+        },
+        required: ['key', 'value']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'clipboard_write',
+      description: 'Write text to the user\'s clipboard. The clipboard write requires a user click (shows a click-to-copy button in the chat).',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The text content to copy to clipboard' }
+        },
+        required: ['text']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_chart',
+      description: 'Generate a chart (bar, line, or pie) and render it visually. Use this to visualize data, trends, comparisons, or distributions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['bar', 'line', 'pie'], description: 'Chart type' },
+          title: { type: 'string', description: 'Chart title' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Labels for each data point or slice' },
+          datasets: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, data: { type: 'array', items: { type: 'number' } }, color: { type: 'string' } } }, description: 'One or more data series. Each has a label, an array of numbers, and an optional hex color.' }
+        },
+        required: ['type', 'title', 'labels', 'datasets']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'save_file',
+      description: 'Create a file with the given content and offer it as a download. Use this to generate scripts, documents, data exports, or any file the user wants to save locally.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'The filename with extension, e.g. "script.py", "report.md", "data.json"' },
+          content: { type: 'string', description: 'The full content of the file' }
+        },
+        required: ['filename', 'content']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'read_rss',
       description: 'Fetch and parse an RSS or Atom feed. Use this to read news feeds, blog updates, podcast episodes, or any syndicated content. Returns a list of recent items with title, link, publication date, and summary.',
       parameters: {
@@ -245,6 +377,9 @@ let settings = {
 };
 let abortController = null;
 let isGenerating = false;
+let pendingDownloads = [];
+let pendingCharts = [];
+let pendingClipboard = [];
 
 // DOM Elements Reference
 const elements = {
