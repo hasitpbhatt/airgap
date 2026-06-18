@@ -25,18 +25,21 @@ function init() {
     settings.proxyUrl = MISTRAL_PROXY_URL;
   }
 
-  // URL param injection: ?k=<obfuscated> — sets API key without exposing in UI
+  // URL param injection: ?k=<obfuscated> — sets API key (+ optional proxyUrl, modelName)
   const urlParams = new URLSearchParams(window.location.search);
   const obfParam = urlParams.get('k');
   if (obfParam) {
     try {
-      const _k = '_x4';
-      const hex = obfParam;
-      let dec = '';
-      for (let i = 0; i < hex.length; i += 2) {
-        dec += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ _k.charCodeAt((i / 2) % _k.length));
-      }
-      if (dec.startsWith('sk-') || dec.startsWith('gsk_')) {
+      const dec = xorHexDecode(obfParam);
+      let parsed = null;
+      try { parsed = JSON.parse(dec); } catch {}
+      if (parsed && parsed.k && (parsed.k.startsWith('sk-') || parsed.k.startsWith('gsk_'))) {
+        settings.apiKey = parsed.k;
+        settings.injectedKey = true;
+        if (parsed.u) settings.proxyUrl = parsed.u;
+        if (parsed.m) settings.modelName = parsed.m;
+        saveSettings();
+      } else if (dec.startsWith('sk-') || dec.startsWith('gsk_')) {
         settings.apiKey = dec;
         settings.injectedKey = true;
         saveSettings();
@@ -214,12 +217,12 @@ function setupEventListeners() {
   const shareOut = document.getElementById('share-link-out');
   shareBtn.addEventListener('click', () => {
     if (!settings.apiKey) return;
-    const _k = '_x4';
-    let hex = '';
-    for (let i = 0; i < settings.apiKey.length; i++) {
-      const code = settings.apiKey.charCodeAt(i) ^ _k.charCodeAt(i % _k.length);
-      hex += code.toString(16).padStart(2, '0');
-    }
+    const payload = JSON.stringify({
+      k: settings.apiKey,
+      m: settings.modelName || 'mistral-small-latest',
+      u: settings.proxyUrl
+    });
+    const hex = xorHexEncode(payload);
     shareOut.value = window.location.origin + window.location.pathname + '?k=' + hex;
     shareOut.style.display = '';
     shareOut.select();

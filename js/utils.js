@@ -36,6 +36,26 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
+// XOR+hex encode/decode for ?k= param
+function xorHexEncode(str) {
+  const _k = '_x4';
+  let hex = '';
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i) ^ _k.charCodeAt(i % _k.length);
+    hex += code.toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+
+function xorHexDecode(hex) {
+  const _k = '_x4';
+  let dec = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    dec += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ _k.charCodeAt((i / 2) % _k.length));
+  }
+  return dec;
+}
+
 function scrollToBottom() {
   elements.chatFeedContainer.scrollTop = elements.chatFeedContainer.scrollHeight;
 }
