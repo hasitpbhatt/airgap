@@ -53,8 +53,8 @@ function init() {
   if (elements.fetchUrlInput) elements.fetchUrlInput.value = settings.fetchUrl;
   if (settings.injectedKey) {
     elements.apiKeyInput.placeholder = 'Key set from URL';
-    elements.apiKeyInput.value = '';
-  } else if (settings.apiKey) {
+  }
+  if (settings.apiKey) {
     elements.apiKeyInput.value = settings.apiKey;
   }
   toggleShareLink();

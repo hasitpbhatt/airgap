@@ -152,7 +152,7 @@ async function executeToolCall(toolCall) {
             const blocks = []; let m;
             while ((m = blockRe.exec(html)) !== null) blocks.push(m[1]);
             for (const block of blocks) {
-              const linkRe = /<a[^>]*href="(https?://[^"]+)"[^>]*>([\s\S]*?)<\/a>/i;
+              const linkRe = new RegExp('<a[^>]*href="(https?://[^"]+)"[^>]*>([\\s\\S]*?)<\\/a>', 'i');
               const lm = linkRe.exec(block);
               if (lm) {
                 const title = lm[2].replace(/<[^>]+>/g, '').trim();
@@ -168,7 +168,7 @@ async function executeToolCall(toolCall) {
           url: 'https://www.ecosia.org/search?q=' + query,
           parse: function(html) {
             const results = [];
-            const re = /<a[^>]+href="(https?://[^"]+)"[^>]*class="[^"]*result[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+            const re = new RegExp('<a[^>]+href="(https?://[^"]+)"[^>]*class="[^"]*result[^"]*"[^>]*>([\\s\\S]*?)<\\/a>', 'gi');
             let m;
             while ((m = re.exec(html)) !== null) {
               const title = m[2].replace(/<[^>]+>/g, '').trim();
@@ -183,7 +183,7 @@ async function executeToolCall(toolCall) {
           url: 'https://www.bing.com/search?q=' + query,
           parse: function(html) {
             const results = [];
-            const re = /<a[^>]+href="(https?://[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+            const re = new RegExp('<a[^>]+href="(https?://[^"]+)"[^>]*>([\\s\\S]*?)<\\/a>', 'gi');
             let m;
             while ((m = re.exec(html)) !== null) {
               const title = m[2].replace(/<[^>]+>/g, '').trim();
