@@ -126,29 +126,94 @@ async function executeToolCall(toolCall) {
     try {
       const query = encodeURIComponent(args.query);
       const fetchUrl = settings.fetchUrl || 'fetch_url.php';
-      const res = await fetch(fetchUrl + '?url=' + encodeURIComponent('https://lite.duckduckgo.com/lite/?q=' + query), {
-        signal: abortController?.signal
-      });
-      const data = await res.json();
-      if (data.error) return { error: 'Search failed: ' + data.error };
 
-      const html = data.content || '';
-      const results = [];
-      const linkRegex = /<a[^>]+href="([^"]*)"[^>]*rel="nofollow"[^>]*>([\s\S]*?)<\/a>/gi;
-      const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
-      const links = [];
-      let m;
-      while ((m = linkRegex.exec(html)) !== null) {
-        links.push({ url: m[1], title: m[2].replace(/<[^>]+>/g, '').trim() });
+      const engines = [
+        {
+          name: 'DuckDuckGo',
+          url: 'https://lite.duckduckgo.com/lite/?q=' + query,
+          parse: function(html) {
+            const results = [];
+            const linkRe = /<a[^>]+href="([^"]*)"[^>]*rel="nofollow"[^>]*>([\s\S]*?)<\/a>/gi;
+            const snippetRe = /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
+            const links = []; let m;
+            while ((m = linkRe.exec(html)) !== null) links.push({ url: m[1], title: m[2].replace(/<[^>]+>/g, '').trim() });
+            const snippets = [];
+            while ((m = snippetRe.exec(html)) !== null) snippets.push(m[1].replace(/<[^>]+>/g, '').trim());
+            for (let i = 0; i < Math.min(links.length, 10); i++) results.push({ title: links[i].title, url: links[i].url, snippet: snippets[i] || '' });
+            return results;
+          }
+        },
+        {
+          name: 'Brave',
+          url: 'https://search.brave.com/search?q=' + query,
+          parse: function(html) {
+            const results = [];
+            const blockRe = /<div[^>]*class="[^"]*snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+            const blocks = []; let m;
+            while ((m = blockRe.exec(html)) !== null) blocks.push(m[1]);
+            for (const block of blocks) {
+              const linkRe = /<a[^>]*href="(https?://[^"]+)"[^>]*>([\s\S]*?)<\/a>/i;
+              const lm = linkRe.exec(block);
+              if (lm) {
+                const title = lm[2].replace(/<[^>]+>/g, '').trim();
+                if (title) results.push({ title, url: lm[1], snippet: block.replace(/<[^>]+>/g, '').replace(title, '').trim().slice(0, 200) });
+              }
+              if (results.length >= 10) break;
+            }
+            return results;
+          }
+        },
+        {
+          name: 'Ecosia',
+          url: 'https://www.ecosia.org/search?q=' + query,
+          parse: function(html) {
+            const results = [];
+            const re = /<a[^>]+href="(https?://[^"]+)"[^>]*class="[^"]*result[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+            let m;
+            while ((m = re.exec(html)) !== null) {
+              const title = m[2].replace(/<[^>]+>/g, '').trim();
+              if (title && title.length > 3) results.push({ title, url: m[1], snippet: '' });
+              if (results.length >= 10) break;
+            }
+            return results;
+          }
+        },
+        {
+          name: 'Bing',
+          url: 'https://www.bing.com/search?q=' + query,
+          parse: function(html) {
+            const results = [];
+            const re = /<a[^>]+href="(https?://[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+            let m;
+            while ((m = re.exec(html)) !== null) {
+              const title = m[2].replace(/<[^>]+>/g, '').trim();
+              if (title && title.length > 3 && !/bing|microsoft/i.test(title)) results.push({ title, url: m[1], snippet: '' });
+              if (results.length >= 10) break;
+            }
+            return results;
+          }
+        }
+      ];
+
+      let lastError = '';
+      for (const engine of engines) {
+        try {
+          const res = await fetch(fetchUrl + '?url=' + encodeURIComponent(engine.url), { signal: abortController?.signal });
+          const data = await res.json();
+          if (data.error) { lastError = engine.name + ': ' + data.error; continue; }
+          const html = data.content || '';
+          if (data.status === 429) { lastError = engine.name + ': rate limited'; continue; }
+          if (html.length < 100) { lastError = engine.name + ': empty response'; continue; }
+          const results = engine.parse(html);
+          if (results.length > 0) {
+            return { query: args.query, engine: engine.name, results, count: results.length };
+          }
+          lastError = engine.name + ': no results found';
+        } catch (e) {
+          lastError = engine.name + ': ' + e.message;
+        }
       }
-      const snippets = [];
-      while ((m = snippetRegex.exec(html)) !== null) {
-        snippets.push(m[1].replace(/<[^>]+>/g, '').trim());
-      }
-      for (let i = 0; i < Math.min(links.length, 10); i++) {
-        results.push({ title: links[i].title, url: links[i].url, snippet: snippets[i] || '' });
-      }
-      return { query: args.query, results, count: results.length };
+      return { error: 'All search engines failed. Last: ' + lastError };
     } catch (err) {
       return { error: 'Search failed: ' + err.message };
     }

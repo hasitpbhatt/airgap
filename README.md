@@ -103,7 +103,7 @@ Create your own custom persona with personalized instructions.
   - `remember` / `recall` / `forget` / `forget_all` — cross-conversation global memory (shared across all chats)
   - `compact` — conversation summarization
   - `get_current_time` — returns current date/time in multiple formats
-  - `search_web` — search the web via DuckDuckGo (no API key needed, returns title/url/snippet)
+  - `search_web` — search the web across multiple engines (DuckDuckGo, Brave, Ecosia, Bing) with automatic fallback
   - `calculate` — evaluates math expressions (safe `eval` via `Function` constructor)
 - Tool results are appended to the conversation and the API is called again
 - The loop continues up to `MAX_TOOL_LOOP` (10) iterations until a final response is generated
