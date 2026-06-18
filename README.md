@@ -13,7 +13,7 @@ cd airgap
 
 Open `index.html` in a browser. Paste an API key. Send a message.
 
-Web access uses a default Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`). Self-host option: deploy `fetch_url.php` to any PHP host via `cp fetch_url.php /var/www/html/` and set the URL in settings.
+Web access uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
 
 **Test:** `npx playwright test` (requires Chromium, install via `npx playwright install chromium`)
 
@@ -45,15 +45,14 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
      ┌──────────┐   ┌──────────┐   ┌──────────┐
      │ Browser  │   │   LLM    │   │   Web    │
      │  UI &    │   │   API    │   │  Fetch   │
-     │ Memory   │   │(Mistral, │   │  Proxy   │
-     │(localS.) │   │ OpenAI)  │   │(fetch_   │
-     └──────────┘   └──────────┘   │ url.php) │
-                                   └──────────┘
+      │ Memory   │   │(Mistral, │   │  Proxy   │
+      │(localS.) │   │ OpenAI)  │   │ (Worker) │
+      └──────────┘   └──────────┘   └──────────┘
 ```
 
 - **Browser** renders the chat UI, manages localStorage, runs tools
 - **LLM API** receives messages + tool definitions, returns text or `tool_calls`
-- **Fetch proxy** defaults to a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`). A PHP fallback (`fetch_url.php`) is provided for self-hosting — trivial cURL script with `Access-Control-Allow-Origin: *`.
+- **Fetch proxy** uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
 
 ## Configuration
 
@@ -62,7 +61,7 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 | Field | Default | Description |
 |-------|---------|-------------|
 | LLM API Proxy URL | `https://api.mistral.ai/v1/chat/completions` | Any OpenAI-compatible API |
-| Tool Fetch Proxy URL | `https://airgap-fetch.gitub.workers.dev/` (or self-hosted PHP) | Web fetch endpoint |
+| Tool Fetch Proxy URL | `https://airgap-fetch.gitub.workers.dev/` | Web fetch endpoint |
 | API Key | — | Stored in localStorage only |
 | Model | `mistral-small-latest` | Preset or custom |
 | System Persona | General | 6 templates or custom prompt |
@@ -147,16 +146,11 @@ Tests mock all network requests (CDN scripts, fonts) via `page.route()`. No real
 
 ### Static host (Netlify, Vercel, GitHub Pages)
 
-Serves the chat UI. Fetch proxy defaults to a Cloudflare Worker; `fetch_url.php` can be self-hosted.
+Serves the chat UI. Web fetch uses the Cloudflare Worker.
 
-### PHP host
+### Custom proxy
 
-```bash
-# Self-host fetch proxy (optional, for those without Cloudflare Workers)
-cp fetch_url.php /var/www/html/
-```
-
-Requires PHP with `curl` extension. Set the **Tool Fetch Proxy URL** in settings to point to your instance.
+Set the **Tool Fetch Proxy URL** in settings to point to your own proxy endpoint.
 
 ### PWA
 

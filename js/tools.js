@@ -255,17 +255,6 @@ async function executeToolCall(toolCall) {
         if (e.instances) {
           return (async () => {
             for (const url of e.instances) {
-              // Try direct browser fetch first (bypasses blocked proxy)
-              try {
-                const directRes = await fetch(url, { signal: abortController?.signal });
-                if (directRes.ok) {
-                  const text = await directRes.text();
-                  if (text.length > 100) {
-                    return { engine: e.name, data: { content: text }, parse: e.parse };
-                  }
-                }
-              } catch {}
-              // Fallback: try through proxy if available
               if (fetchUrl) {
                 try {
                   const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
