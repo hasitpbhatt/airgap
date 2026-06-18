@@ -122,7 +122,7 @@ function init() {
   if (settings.currentPersona === 'custom') {
     elements.systemPromptTextarea.value = settings.customSystemPrompt || '';
   } else {
-    elements.systemPromptTextarea.value = PERSONAS[settings.currentPersona].system;
+    elements.systemPromptTextarea.value = PERSONAS[settings.currentPersona]?.system || '';
     elements.systemPromptTextarea.disabled = true;
   }
 
@@ -263,7 +263,7 @@ function setupEventListeners() {
     updateInputUIState();
   });
   elements.maxTurnsInput.addEventListener('input', (e) => {
-    settings.maxTurns = parseInt(e.target.value) || 5;
+    settings.maxTurns = Math.max(1, parseInt(e.target.value) || 5);
     saveSettings();
     updateInputUIState();
   });
@@ -277,7 +277,7 @@ function setupEventListeners() {
       elements.systemPromptTextarea.value = settings.customSystemPrompt || '';
       elements.systemPromptTextarea.disabled = false;
     } else {
-      elements.systemPromptTextarea.value = PERSONAS[val].system;
+      elements.systemPromptTextarea.value = PERSONAS[val]?.system || '';
       elements.systemPromptTextarea.disabled = true;
     }
     saveSettings();

@@ -330,7 +330,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'save_file',
-      description: 'Create a file with the given content. The app will show a Download button in the chat so the user can save it locally. Use this INSTEAD of telling the user to visit a URL — do NOT make up download links. Call this tool directly with the filename and content.',
+      description: 'Create a file with the given content. The app automatically shows a Download button in the chat — the user can click it to save. NEVER mention a download URL, link, or hosting service in your response text — just confirm the file was saved. Call this tool directly with the filename and content; do NOT fabricate download URLs.',
       parameters: {
         type: 'object',
         properties: {

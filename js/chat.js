@@ -21,11 +21,11 @@ function createNewChat(initialPersona = null) {
   const persona = initialPersona || settings.currentPersona;
   const systemPrompt = persona === 'custom'
     ? (settings.customSystemPrompt || '')
-    : PERSONAS[persona].system;
+    : (PERSONAS[persona]?.system || '');
 
   const newChat = {
     id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-    title: 'Session ' + (chats.length + 1),
+    title: new Date().toLocaleString(),
     persona: persona,
     systemPrompt: systemPrompt,
     messages: [
@@ -292,15 +292,42 @@ function renderChatFeed() {
   });
 
   highlightCodeBlocks();
-  renderMathInElement(elements.chatFeed, {
-    delimiters: [
-      {left: '$$', right: '$$', display: true},
-      {left: '$', right: '$', display: false},
-      {left: '\\(', right: '\\)', display: false},
-      {left: '\\[', right: '\\]', display: true}
-    ],
-    throwOnError: false
-  });
+  if (typeof renderMathInElement === 'function') {
+    renderMathInElement(elements.chatFeed, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  }
+
+  // Re-render saved file download buttons so they survive re-renders
+  if (activeChat.savedFiles?.length) {
+    activeChat.savedFiles.forEach(sf => {
+      const entry = pendingDownloads.find(d => d.fileId === sf.fileId);
+      if (!entry) return;
+      const row = document.createElement('div');
+      row.className = 'message-row assistant';
+      row.innerHTML = `
+        <div class="message-bubble tool-call-bubble tool-call-done">
+          <div class="msg-content">
+            <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+            <span class="tool-call-label">File ready:</span>
+            <code class="tool-call-url">${escapeHtml(sf.filename)}</code>
+            <span class="tool-call-detail">(${sf.size} bytes)</span>
+            <button class="btn-download-file" data-file-id="${sf.fileId}">
+              <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+              Download
+            </button>
+          </div>
+        </div>
+      `;
+      elements.chatFeed.appendChild(row);
+    });
+  }
 
   lucide.createIcons();
   scrollToBottom();
@@ -356,7 +383,7 @@ function selectPersonaForNewChat(personaName) {
   if (!activeChat) return;
 
   activeChat.persona = personaName;
-  activeChat.systemPrompt = PERSONAS[personaName].system;
+  activeChat.systemPrompt = PERSONAS[personaName]?.system || '';
   activeChat.messages[0].content = activeChat.systemPrompt;
 
   elements.personaSelect.value = personaName;

@@ -59,7 +59,7 @@ async function executeToolCall(toolCall) {
           return { error: data.error || ('HTTP ' + data.status) };
         }
 
-        if (!data.error) {
+        if (data.content && !data.error && data.status === 200) {
           try {
             llmStoreSet(cacheKey, JSON.stringify({ ...data, timestamp: Date.now() }));
             var storedKey = '_fetched_' + encodeURIComponent(args.url);
@@ -468,6 +468,14 @@ async function executeToolCall(toolCall) {
     const content = args.content || '';
     const fileId = 'file-' + toolCall.id;
     pendingDownloads.push({ toolCallId: toolCall.id, fileId, filename, content });
+
+    const activeChat = getActiveChat();
+    if (activeChat) {
+      if (!activeChat.savedFiles) activeChat.savedFiles = [];
+      activeChat.savedFiles.push({ fileId, filename, size: content.length, ts: Date.now() });
+      saveChats();
+    }
+
     return { success: true, filename, size: content.length };
   }
 

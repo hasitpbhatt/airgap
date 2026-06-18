@@ -77,6 +77,7 @@ async function triggerSendAPI() {
     content: m.content
   }));
   let toolDepth = 0;
+  let saveFileUsed = false;
 
   try {
     while (toolDepth < MAX_TOOL_LOOP) {
@@ -120,6 +121,7 @@ async function triggerSendAPI() {
 
         let wasCompacted = false;
         for (const tc of message.tool_calls) {
+          if (tc.function.name === 'save_file') saveFileUsed = true;
           appendToolCallUI(tc);
           const result = await executeToolCall(tc);
           updateToolCallUI(tc, result);
@@ -152,8 +154,11 @@ async function triggerSendAPI() {
       const bubble = document.getElementById('temp-loading-bubble');
       if (bubble) bubble.remove();
 
-      const content = message?.content || '';
+      let content = message?.content || '';
       if (content) {
+        if (saveFileUsed) {
+          content = content.replace(/\[([^\]]*)\]\(https?:\/\/[^\)]+\)/g, '$1');
+        }
         activeChat.messages.push({ role: 'assistant', content });
         activeChat.turnCount++;
         saveChats();
