@@ -122,6 +122,62 @@ async function executeToolCall(toolCall) {
     };
   }
 
+  if (name === 'remember') {
+    try {
+      globalStoreSet(args.key, args.value);
+      refreshMemoryPanelIfOpen();
+      return { success: true, key: args.key };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  if (name === 'recall') {
+    try {
+      const keyword = args.keyword;
+      const allKeys = globalStoreListKeys();
+      if (allKeys.length === 0) {
+        return { result: 'No data stored in global memory yet.' };
+      }
+
+      const exact = globalStoreGet(keyword);
+      if (exact !== null) {
+        return { key: keyword, value: exact, source: 'exact_match' };
+      }
+
+      const matches = allKeys.filter(k => k.toLowerCase().includes(keyword.toLowerCase()));
+      if (matches.length === 0) {
+        return { result: 'No matching keys found in global memory for: ' + keyword, all_keys: allKeys };
+      }
+
+      const values = {};
+      matches.forEach(k => { values[k] = globalStoreGet(k); });
+      return { matches, values, count: matches.length, source: 'substring_match' };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  if (name === 'forget') {
+    try {
+      globalStoreDelete(args.key);
+      refreshMemoryPanelIfOpen();
+      return { success: true, key: args.key };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  if (name === 'forget_all') {
+    try {
+      globalStoreClear();
+      refreshMemoryPanelIfOpen();
+      return { success: true, message: 'All global memory cleared.' };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
   return { error: `Unknown tool: ${name}` };
 }
 
@@ -159,17 +215,26 @@ function appendToolCallUI(toolCall) {
   } else {
     let key = '';
     try { key = JSON.parse(argsRaw).key || ''; } catch {}
-    const toolLabels = {
+    const storageLabels = {
       store_value: 'Storing:',
       read_value: 'Reading:',
       list_stored_keys: 'Listing keys',
       delete_value: 'Deleting:'
     };
+    const memoryLabels = {
+      remember: 'Remembering:',
+      recall: 'Recalling:',
+      forget: 'Forgetting:',
+      forget_all: 'Clearing all memory'
+    };
+    const isMemory = memoryLabels[name];
+    const iconName = isMemory ? 'brain' : 'database';
+    const label = storageLabels[name] || memoryLabels[name] || name;
     row.innerHTML = `
       <div class="message-bubble tool-call-bubble">
         <div class="msg-content">
-          <i data-lucide="database" style="width: 14px; height: 14px; vertical-align: middle;"></i>
-          <span class="tool-call-label">${toolLabels[name] || name}</span>
+          <i data-lucide="${iconName}" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">${label}</span>
           ${key ? `<code class="tool-call-url">${escapeHtml(key)}</code>` : ''}
           <span class="tool-call-status">...</span>
         </div>
@@ -218,11 +283,18 @@ function updateToolCallUI(toolCall, result) {
       </div>
     `;
   } else {
+    const doneLabels = {
+      remember: 'Memory stored',
+      recall: 'Memory recalled',
+      forget: 'Memory deleted',
+      forget_all: 'All memory cleared'
+    };
+    const doneLabel = doneLabels[name] || (name + ' OK');
     row.innerHTML = `
       <div class="message-bubble tool-call-bubble tool-call-done">
         <div class="msg-content">
           <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
-          <span class="tool-call-label">${name} OK</span>
+          <span class="tool-call-label">${doneLabel}</span>
         </div>
       </div>
     `;

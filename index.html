@@ -60,6 +60,27 @@
         <!-- Rendered dynamically -->
       </div>
 
+      <!-- Memory Section -->
+      <div class="sidebar-memory">
+        <button class="memory-trigger" id="memory-trigger">
+          <span style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="brain"></i> Memory
+          </span>
+          <i data-lucide="chevron-up" id="memory-chevron"></i>
+        </button>
+
+        <div class="memory-panel" id="memory-panel">
+          <input type="text" id="memory-search" class="memory-search" placeholder="Search memories...">
+          <div class="memory-list" id="memory-list">
+            <div class="memory-empty">No stored memories yet. Ask the AI to remember something.</div>
+          </div>
+          <button class="memory-clear-btn" id="clear-memory-btn">
+            <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+            Clear All Memory
+          </button>
+        </div>
+      </div>
+
       <!-- Settings Section -->
       <div class="sidebar-settings">
         <button class="settings-trigger" id="settings-trigger">

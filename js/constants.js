@@ -140,10 +140,65 @@ const AVAILABLE_TOOLS = [
         required: ['expression']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remember',
+      description: 'Store a value in your global long-term memory. Unlike store_value which is per-conversation, remember persists across all your conversations. Use this to remember user preferences, identity, past decisions, project context, or any information that should be available in future sessions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'A unique key to store the value under, e.g. "user_name", "preferred_language", "project_foo_context"' },
+          value: { type: 'string', description: 'The value to remember' }
+        },
+        required: ['key', 'value']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'recall',
+      description: 'Retrieve a value from your global long-term memory. Searches by exact key first, then returns all keys that contain the keyword. Use this to remember information across conversations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          keyword: { type: 'string', description: 'The exact key or a search keyword to look up in memory' }
+        },
+        required: ['keyword']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'forget',
+      description: 'Delete a specific key from your global long-term memory.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'The key to delete from memory' }
+        },
+        required: ['key']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'forget_all',
+      description: 'Delete ALL keys from your global long-term memory. Use with caution — this permanently removes everything you remember across all conversations.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
   }
 ];
 
 const MAX_TOOL_LOOP = 10;
+const AUTO_COMPACT_THRESHOLD = 15;
 
 // State Variables
 let chats = [];
@@ -200,7 +255,15 @@ const elements = {
   inputInfo: document.getElementById('input-info'),
   micBtn: document.getElementById('mic-btn'),
   stopGenBtn: document.getElementById('stop-gen-btn'),
-  sendBtn: document.getElementById('send-btn')
+  sendBtn: document.getElementById('send-btn'),
+
+  // Memory panel
+  memoryTriggerBtn: document.getElementById('memory-trigger'),
+  memoryChevron: document.getElementById('memory-chevron'),
+  memoryPanel: document.getElementById('memory-panel'),
+  memoryList: document.getElementById('memory-list'),
+  memorySearch: document.getElementById('memory-search'),
+  clearMemoryBtn: document.getElementById('clear-memory-btn')
 };
 
 // Check if there is an environment/host injected proxy URL fallback

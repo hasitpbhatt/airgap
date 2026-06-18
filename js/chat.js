@@ -440,3 +440,99 @@ function updateInputUIState() {
 
   handleTextareaAutoGrow();
 }
+
+function refreshMemoryPanelIfOpen() {
+  if (elements.memoryPanel && elements.memoryPanel.classList.contains('open')) {
+    renderMemoryPanel();
+  }
+}
+
+function renderMemoryPanel() {
+  const keys = globalStoreListKeys();
+  elements.memoryList.innerHTML = '';
+
+  if (keys.length === 0) {
+    elements.memoryList.innerHTML = '<div class="memory-empty">No stored memories yet. Ask the AI to remember something.</div>';
+    return;
+  }
+
+  const searchTerm = (elements.memorySearch.value || '').toLowerCase();
+  const filtered = searchTerm ? keys.filter(k => k.toLowerCase().includes(searchTerm)) : keys;
+
+  if (filtered.length === 0) {
+    elements.memoryList.innerHTML = `<div class="memory-empty">No keys match "${escapeHtml(elements.memorySearch.value)}"</div>`;
+    return;
+  }
+
+  const sorted = filtered.sort((a, b) => a.localeCompare(b));
+
+  sorted.forEach(key => {
+    const value = globalStoreGet(key) || '';
+    const isLong = value.length > 100;
+    const truncated = isLong ? value.slice(0, 100) + '…' : value;
+
+    const item = document.createElement('div');
+    item.className = 'memory-item';
+    item.innerHTML = `
+      <div class="memory-item-info">
+        <div class="memory-item-key">${escapeHtml(key)}</div>
+        <div class="memory-item-value">${escapeHtml(truncated)}${isLong ? ' <span class="memory-expand-hint">(show all)</span>' : ''}</div>
+      </div>
+      <div class="memory-item-actions">
+        <button class="memory-item-edit" data-key="${escapeHtml(key)}" title="Edit this memory">
+          <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+        </button>
+        <button class="memory-item-delete" data-key="${escapeHtml(key)}" title="Delete this memory">
+          <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+        </button>
+      </div>
+    `;
+
+    // Click item to expand/collapse full value
+    item.querySelector('.memory-item-info').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!isLong) return;
+      const expanded = item.classList.toggle('expanded');
+      const valEl = item.querySelector('.memory-item-value');
+      const hint = valEl.querySelector('.memory-expand-hint');
+      if (expanded) {
+        valEl.childNodes[0].textContent = value;
+        if (hint) hint.textContent = ' (show less)';
+      } else {
+        valEl.childNodes[0].textContent = truncated;
+        if (hint) hint.textContent = ' (show all)';
+      }
+    });
+
+    // Edit key/value via prompt
+    item.querySelector('.memory-item-edit').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const k = e.currentTarget.getAttribute('data-key');
+      const v = globalStoreGet(k) || '';
+      const newKey = prompt('Edit memory key:', k);
+      if (newKey === null) return;
+      const newValue = prompt('Edit memory value:', v);
+      if (newValue === null) return;
+      if (newKey.trim() && newValue.trim()) {
+        if (newKey.trim() !== k) {
+          globalStoreDelete(k);
+        }
+        globalStoreSet(newKey.trim(), newValue.trim());
+        renderMemoryPanel();
+      }
+    });
+
+    item.querySelector('.memory-item-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const k = e.currentTarget.getAttribute('data-key');
+      if (confirm(`Delete "${k}" from global memory?`)) {
+        globalStoreDelete(k);
+        renderMemoryPanel();
+      }
+    });
+
+    elements.memoryList.appendChild(item);
+  });
+
+  lucide.createIcons();
+}

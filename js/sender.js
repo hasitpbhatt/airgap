@@ -1,5 +1,5 @@
 // API Communication Logic (Fetch + Abort)
-function triggerSend() {
+async function triggerSend() {
   const text = elements.chatTextarea.value.trim();
   const activeChat = getActiveChat();
 
@@ -29,6 +29,11 @@ function triggerSend() {
   if (settings.useMaxTurns && activeChat.turnCount >= settings.maxTurns) {
     alert("Turn limit reached. Start a new session or increase the limit in settings.");
     return;
+  }
+
+  // Auto-compact when conversation exceeds threshold
+  if (getMessageCountWithoutSystem(activeChat) >= AUTO_COMPACT_THRESHOLD) {
+    await triggerCompact();
   }
 
   activeChat.messages.push({ role: 'user', content: text });

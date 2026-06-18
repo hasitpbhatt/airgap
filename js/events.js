@@ -90,6 +90,37 @@ function setupEventListeners() {
     lucide.createIcons();
   });
 
+  // Memory panel toggle
+  if (elements.memoryTriggerBtn) {
+    elements.memoryTriggerBtn.addEventListener('click', () => {
+      const isOpen = elements.memoryPanel.classList.toggle('open');
+      elements.memoryChevron.setAttribute('data-lucide', isOpen ? 'chevron-down' : 'chevron-up');
+      lucide.createIcons();
+      if (isOpen) {
+        renderMemoryPanel();
+      }
+    });
+  }
+
+  // Memory search filter
+  if (elements.memorySearch) {
+    elements.memorySearch.addEventListener('input', () => {
+      renderMemoryPanel();
+    });
+  }
+
+  // Clear all memory
+  if (elements.clearMemoryBtn) {
+    elements.clearMemoryBtn.addEventListener('click', () => {
+      const keys = globalStoreListKeys();
+      if (keys.length === 0) return;
+      if (confirm('Delete all ' + keys.length + ' memories? This cannot be undone.')) {
+        globalStoreClear();
+        renderMemoryPanel();
+      }
+    });
+  }
+
   // Settings binding
   elements.proxyUrlInput.addEventListener('input', (e) => {
     settings.proxyUrl = e.target.value.trim();
