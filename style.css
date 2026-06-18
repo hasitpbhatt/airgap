@@ -213,7 +213,6 @@ body {
 /* Sidebar Settings Section */
 .sidebar-settings {
   border-top: 1px solid hsl(var(--border-color));
-  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .settings-trigger {
@@ -232,7 +231,7 @@ body {
 }
 .settings-trigger:hover {
   color: hsl(var(--text-primary));
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: hsl(var(--bg-tertiary));
 }
 
 .settings-panel {
@@ -244,7 +243,7 @@ body {
 }
 .settings-panel.open {
   max-height: 380px;
-  padding-bottom: 1.25rem;
+  padding: 0.75rem 1.25rem 1.25rem;
 }
 
 .setting-group {
@@ -304,7 +303,6 @@ body {
 /* Memory Panel */
 .sidebar-memory {
   border-top: 1px solid hsl(var(--border-color));
-  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .memory-trigger {
@@ -323,7 +321,7 @@ body {
 }
 .memory-trigger:hover {
   color: hsl(var(--text-primary));
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: hsl(var(--bg-tertiary));
 }
 
 .memory-panel {
@@ -337,7 +335,7 @@ body {
 }
 .memory-panel.open {
   max-height: 60vh;
-  padding-bottom: 1rem;
+  padding: 0.75rem 1.25rem 1rem;
 }
 
 .memory-search {
