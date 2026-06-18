@@ -4,7 +4,9 @@ A gorgeous, developer-centric interface for talking to LLMs with **agentic tool 
 
 ## Features
 
-- **Agentic Tool Calling**: The LLM can fetch live data from the web using the `fetch_url` tool, behave as an agent, and use results to answer your questions
+- **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), persist facts to memory (`store_value`/`read_value`), and compact conversation history (`compact`)
+- **Persistent LLM Memory**: Per-conversation localStorage namespace — the model can save/read/list/delete key-value data across turns
+- **Conversation Compaction**: Both an LLM tool and a user `/compact` command to summarize long conversations and free context window space
 - **Multiple Teaching Personas**: General Assistant, Explain Like I'm 10, Deep Dive Expert, First Principles Thinker, Socratic Tutor, and Custom System Prompt
 - **Configurable API Settings**: Proxy URL, Tool Fetch URL, API Key, Model Selection, and Turns Limit
 - **Chat Management**: Create, rename, export, and clear conversations
@@ -15,7 +17,7 @@ A gorgeous, developer-centric interface for talking to LLMs with **agentic tool 
 
 ## Architecture
 
-Single-page application with all logic in a self-contained `app.js` file and styling in `style.css`. No build tooling required — just open `index.html` in a browser. Tool fetch requests are proxied through `fetch_url.php` to bypass CORS (or any custom endpoint you configure).
+Single-page application split into focused JS modules loaded via plain `<script>` tags (no build tooling — works from `file://`). Tool fetch requests are proxied through `fetch_url.php` to bypass CORS (or any custom endpoint you configure).
 
 ## Installation
 
@@ -68,7 +70,13 @@ Create your own custom persona with personalized instructions.
 .
 ├── index.html        # Main application page
 ├── style.css         # Styling
-├── app.js            # Application logic (single file)
+├── constants.js      # Personas, tool definitions, state vars, DOM refs
+├── utils.js          # Markdown rendering, sanitization, code highlighting
+├── storage.js        # Per-conversation localStorage helpers for LLM tools
+├── chat.js           # Chat CRUD, rendering, message actions, input UI state
+├── tools.js          # Tool execution (fetch_url, store/read, compact) + UI
+├── sender.js         # API sending, agent loop, /compact command
+├── events.js         # Event listeners + initialization
 ├── fetch_url.php     # CORS proxy for tool fetch calls
 ├── README.md         # This file
 └── LICENSE           # License
@@ -78,10 +86,12 @@ Create your own custom persona with personalized instructions.
 
 ### Agentic Tool Loop
 - The LLM receives `AVAILABLE_TOOLS` definitions with each API call
-- When the model responds with `tool_calls`, the app executes each tool (e.g., `fetch_url`) via the configured proxy
+- When the model responds with `tool_calls`, the app executes each tool via `executeToolCall()`
+- **Available tools**: `fetch_url` (web fetch via PHP proxy), `store_value` / `read_value` / `list_stored_keys` / `delete_value` (per-chat localStorage memory), `compact` (conversation summarization)
 - Tool results are appended to the conversation and the API is called again
 - The loop continues up to `MAX_TOOL_LOOP` (10) iterations until a final response is generated
 - Tool calls are shown in real-time with dashed-border bubbles above the typing indicator
+- The `compact` tool modifies `activeChat.messages` in place and the loop rebuilds the local messages array from the compacted history
 
 ### State Management
 - Centralized state store with reactive updates

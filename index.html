@@ -206,7 +206,13 @@
 
   </div>
 
-  <!-- Custom Logic Script -->
-  <script src="app.js"></script>
+  <!-- Custom Logic Scripts (loaded in dependency order, no modules -- works from file://) -->
+  <script src="constants.js"></script>
+  <script src="utils.js"></script>
+  <script src="storage.js"></script>
+  <script src="chat.js"></script>
+  <script src="tools.js"></script>
+  <script src="sender.js"></script>
+  <script src="events.js"></script>
 </body>
 </html>
