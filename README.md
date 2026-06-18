@@ -4,11 +4,14 @@ A gorgeous, developer-centric interface for talking to LLMs with **agentic tool 
 
 ## Features
 
-- **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), persist facts to memory (`store_value`/`read_value`), and compact conversation history (`compact`)
+- **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), persist facts to memory (`store_value`/`read_value`), compact conversation history (`compact`), perform math (`calculate`), and check the time (`get_current_time`)
+- **Transparent Fetch Cache**: Repeated URL fetches return cached results (5-min TTL) — shown as *(cached Ns ago)* in the UI
 - **Persistent LLM Memory**: Per-conversation localStorage namespace — the model can save/read/list/delete key-value data across turns
 - **Conversation Commands**: `/compact` to summarize & trim history (also an LLM tool), `/clear` to reset messages while keeping system prompt
+- **Voice Input**: Built-in microphone button using the Web Speech Recognition API — works on Chrome, Edge, and Safari over HTTPS
+- **PWA Ready**: Installable on mobile home screen via `manifest.json` — runs fullscreen with no browser chrome
 - **Multiple Teaching Personas**: General Assistant, Explain Like I'm 10, Deep Dive Expert, First Principles Thinker, Socratic Tutor, and Custom System Prompt
-- **Configurable API Settings**: Proxy URL, Tool Fetch URL, API Key, Model Selection, and Turns Limit
+- **Configurable API Settings**: API URL, Tool Fetch URL, API Key, Model Selection, and Turns Limit
 - **Chat Management**: Create, rename, export, and clear conversations
 - **Rich Text Editing**: Markdown support with syntax highlighting and LaTeX equations
 - **Responsive Design**: Works seamlessly on desktop and mobile
@@ -27,9 +30,11 @@ This project is a single-page application that doesn't require traditional insta
 
 1. **Open the application**: Open `index.html` in your browser
 2. **Start a conversation**: Click "New Conversation" or select a persona from the welcome screen
-3. **Configure settings**: Click the settings icon in the sidebar to adjust API and tool fetch settings
+3. **Configure settings**: Click the settings icon in the sidebar to adjust API URL (default: `api.mistral.ai`), tool fetch proxy, and API key
 4. **Chat with AI**: Type your message and press Enter or click the send button
 5. **Ask for live data**: Try "What's on Hacker News?" — the LLM will call the fetch tool automatically
+6. **Use commands**: Type `/compact` to summarize history or `/clear` to reset the conversation
+7. **Voice input**: Tap the mic button (HTTPS only) and speak — your words appear in the textarea automatically
 
 ## Personas
 
@@ -54,9 +59,9 @@ Create your own custom persona with personalized instructions.
 ## Configuration
 
 ### API Settings
-- **LLM API Proxy URL**: The Mistral API proxy endpoint (default: quiz-ai-proxy.hasit-p-bhatt.workers.dev/)
-- **Tool Fetch Proxy URL**: Endpoint for proxying fetch_url tool calls (default: fetch_url.php)
-- **API Key**: Optional authentication token
+- **LLM API URL**: The OpenAI-compatible chat completions endpoint (default: `https://api.mistral.ai/v1/chat/completions`)
+- **Tool Fetch Proxy URL**: Endpoint for proxying `fetch_url` tool calls (default: `fetch_url.php` — relative path)
+- **API Key**: Authentication token for the API provider
 - **Model Selection**: Choose from Mistral Small, Medium, Large, Codestral, or Custom
 - **Turns Limit**: Optional limit on conversation length
 
@@ -75,10 +80,12 @@ Create your own custom persona with personalized instructions.
 │   ├── utils.js      # Markdown rendering, sanitization, code highlighting
 │   ├── storage.js    # Per-conversation localStorage helpers for LLM tools
 │   ├── chat.js       # Chat CRUD, rendering, message actions, input UI state
-│   ├── tools.js      # Tool execution (fetch_url, store/read, compact) + UI
+│   ├── tools.js      # Tool execution (fetch, store/read, compact, calc, time) + UI
 │   ├── sender.js     # API sending, agent loop, /compact, /clear commands
-│   └── events.js     # Event listeners + initialization
+│   └── events.js     # Event listeners, init, voice input SpeechRecognition
 ├── fetch_url.php     # CORS proxy for tool fetch calls
+├── manifest.json     # PWA manifest (standalone display, purple theme)
+├── icon.svg          # PWA app icon (terminal-themed)
 ├── README.md         # This file
 └── LICENSE           # License
 ```
@@ -88,11 +95,37 @@ Create your own custom persona with personalized instructions.
 ### Agentic Tool Loop
 - The LLM receives `AVAILABLE_TOOLS` definitions with each API call
 - When the model responds with `tool_calls`, the app executes each tool via `executeToolCall()`
-- **Available tools**: `fetch_url` (web fetch via PHP proxy), `store_value` / `read_value` / `list_stored_keys` / `delete_value` (per-chat localStorage memory), `compact` (conversation summarization)
+- **8 available tools**:
+  - `fetch_url` — web fetch via PHP CORS proxy
+  - `store_value` / `read_value` / `list_stored_keys` / `delete_value` — per-chat localStorage memory
+  - `compact` — conversation summarization
+  - `get_current_time` — returns current date/time in multiple formats
+  - `calculate` — evaluates math expressions (safe `eval` via `Function` constructor)
 - Tool results are appended to the conversation and the API is called again
 - The loop continues up to `MAX_TOOL_LOOP` (10) iterations until a final response is generated
-- Tool calls are shown in real-time with dashed-border bubbles above the typing indicator
-- The `compact` tool modifies `activeChat.messages` in place and the loop rebuilds the local messages array from the compacted history
+- Tool calls are shown in real-time with dashed-border bubbles above the typing indicator; each tool type has a distinct icon (globe, database, file-text, clock, calculator)
+- The `compact` tool modifies `activeChat.messages` in place and the loop rebuilds the local messages array from the compacted history; `/compact` also shows a system notice in chat
+
+### Fetch Cache
+- `fetch_url` checks a per-chat localStorage cache before making HTTP requests
+- Cache key: `_fetch_cache_{encodeURIComponent(url)}` inside the conversation's namespace
+- Entries expire after 5 minutes (configurable TTL)
+- Cached results display *(cached Ns ago)* in the tool bubble — zero LLM dependency
+- Cache is automatically cleaned during `/compact` and `/clear`
+
+### Voice Input
+- A mic button (`🎤`) appears in the textarea toolbar when the browser supports `SpeechRecognition` or `webkitSpeechRecognition`
+- Tapping the button starts recording with a pulsing red indicator
+- Speech is transcribed in real-time and inserted into the message textarea
+- Auto-stops after 3 seconds of silence
+- Requires HTTPS (blocked on `file://` and insecure origins)
+- Supported in Chrome, Edge, Safari (desktop & mobile)
+
+### PWA Support
+- `manifest.json` defines standalone display mode with a purple theme (`#7c3aed`)
+- SVG icon scales cleanly to 192×192 and 512×512
+- When served over HTTPS, users can "Add to Home Screen" for a native-like experience
+- Fully offline capable once cached by the browser's service worker (future enhancement)
 
 ### State Management
 - Centralized state store with reactive updates
