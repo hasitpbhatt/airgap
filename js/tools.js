@@ -8,6 +8,20 @@ async function executeToolCall(toolCall) {
   }
 
   if (name === 'fetch_url') {
+    const CACHE_TTL = 300000; // 5 minutes
+    const cacheKey = '_fetch_cache_' + encodeURIComponent(args.url);
+
+    try {
+      const cachedRaw = llmStoreGet(cacheKey);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        const age = Date.now() - cached.timestamp;
+        if (age < CACHE_TTL) {
+          return { ...cached, cached: true, age_ms: age };
+        }
+      }
+    } catch {}
+
     try {
       const fetchUrl = settings.fetchUrl || 'fetch_url.php';
       const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), {
@@ -19,7 +33,13 @@ async function executeToolCall(toolCall) {
         return { error: `Fetch proxy error ${proxyRes.status}: ${errText || proxyRes.statusText}` };
       }
 
-      return await proxyRes.json();
+      const data = await proxyRes.json();
+      if (!data.error) {
+        try {
+          llmStoreSet(cacheKey, JSON.stringify({ ...data, timestamp: Date.now() }));
+        } catch {}
+      }
+      return { ...data, cached: false };
     } catch (err) {
       return { error: err.message };
     }
@@ -185,6 +205,7 @@ function updateToolCallUI(toolCall, result) {
     `;
   } else if (name === 'fetch_url') {
     const preview = (result.content || '').slice(0, 80).replace(/\s+/g, ' ').trim();
+    const cacheLabel = result.cached ? `<span class="tool-call-detail">(cached ${(result.age_ms / 1000).toFixed(0)}s ago)</span>` : '';
     row.innerHTML = `
       <div class="message-bubble tool-call-bubble tool-call-done">
         <div class="msg-content">
@@ -192,6 +213,7 @@ function updateToolCallUI(toolCall, result) {
           <span class="tool-call-label">Fetched:</span>
           <code class="tool-call-url">${result.status} OK</code>
           <span class="tool-call-detail">(${(result.content || '').length} bytes)</span>
+          ${cacheLabel}
         </div>
       </div>
     `;
