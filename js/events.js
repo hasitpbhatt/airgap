@@ -8,8 +8,8 @@ function init() {
   if (savedSettings) {
     try {
       settings = { ...settings, ...JSON.parse(savedSettings) };
-      if (settings.proxyUrl === 'http://localhost:8080/v1/chat/completions') {
-        settings.proxyUrl = 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/';
+      if (settings.proxyUrl === 'http://localhost:8080/v1/chat/completions' || settings.proxyUrl === 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/') {
+        settings.proxyUrl = 'https://api.mistral.ai/v1/chat/completions';
       }
       if (!localStorage.getItem('opencode_settings_turns_migrated')) {
         settings.useMaxTurns = false;

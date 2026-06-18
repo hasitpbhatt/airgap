@@ -149,7 +149,7 @@ const MAX_TOOL_LOOP = 10;
 let chats = [];
 let currentChatId = null;
 let settings = {
-  proxyUrl: 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/',
+  proxyUrl: 'https://api.mistral.ai/v1/chat/completions',
   fetchUrl: '',
   apiKey: '',
   modelName: 'mistral-small-latest',
@@ -208,5 +208,5 @@ const getInitialProxyUrl = () => {
   if (typeof MISTRAL_PROXY_URL !== 'undefined' && MISTRAL_PROXY_URL) {
     return MISTRAL_PROXY_URL;
   }
-  return 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/';
+  return 'https://api.mistral.ai/v1/chat/completions';
 };
