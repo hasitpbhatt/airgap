@@ -255,13 +255,26 @@ async function executeToolCall(toolCall) {
         if (e.instances) {
           return (async () => {
             for (const url of e.instances) {
+              // Try direct browser fetch first (bypasses blocked proxy)
               try {
-                const res = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
-                const data = await res.json();
-                if (!data.error && data.content && data.content.length > 100) {
-                  return { engine: e.name, data, parse: e.parse };
+                const directRes = await fetch(url, { signal: abortController?.signal });
+                if (directRes.ok) {
+                  const text = await directRes.text();
+                  if (text.length > 100) {
+                    return { engine: e.name, data: { content: text }, parse: e.parse };
+                  }
                 }
               } catch {}
+              // Fallback: try through proxy if available
+              if (fetchUrl) {
+                try {
+                  const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
+                  const d = await proxyRes.json();
+                  if (!d.error && d.content && d.content.length > 100) {
+                    return { engine: e.name, data: d, parse: e.parse };
+                  }
+                } catch {}
+              }
             }
             throw new Error('All SearXNG instances failed');
           })();

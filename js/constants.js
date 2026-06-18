@@ -145,7 +145,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'search_web',
-      description: 'Search the web for a query and return a list of results (titles, URLs, snippets). Queries multiple search engines in parallel (DuckDuckGo, Brave, Ecosia, Bing) and returns results from the first that responds. For fetching a specific URL, use fetch_url instead.',
+      description: 'Search the web for a query and return a list of results (titles, URLs, snippets). Tries SearXNG (public instances, direct from browser) first, then falls back to proxy-based engines (DuckDuckGo, Ecosia, Bing, Brave). Best results with SearXNG as it uses a native JSON API and bypasses any proxy blocks.',
       parameters: {
         type: 'object',
         properties: {
