@@ -13,7 +13,7 @@ cd airgap
 
 Open `index.html` in a browser. Paste an API key. Send a message.
 
-Deploy `fetch_url.php` to any PHP host for web access: `cp fetch_url.php /var/www/html/`
+Web access uses a default Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`). Self-host option: deploy `fetch_url.php` to any PHP host via `cp fetch_url.php /var/www/html/` and set the URL in settings.
 
 **Test:** `npx playwright test` (requires Chromium, install via `npx playwright install chromium`)
 
@@ -53,7 +53,7 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 
 - **Browser** renders the chat UI, manages localStorage, runs tools
 - **LLM API** receives messages + tool definitions, returns text or `tool_calls`
-- **Fetch proxy** (`fetch_url.php`) is the only server component — trivial PHP cURL script with `Access-Control-Allow-Origin: *`. Deploy it anywhere PHP runs.
+- **Fetch proxy** defaults to a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`). A PHP fallback (`fetch_url.php`) is provided for self-hosting — trivial cURL script with `Access-Control-Allow-Origin: *`.
 
 ## Configuration
 
@@ -62,7 +62,7 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 | Field | Default | Description |
 |-------|---------|-------------|
 | LLM API Proxy URL | `https://api.mistral.ai/v1/chat/completions` | Any OpenAI-compatible API |
-| Tool Fetch Proxy URL | (relative `fetch_url.php`) | Web fetch endpoint |
+| Tool Fetch Proxy URL | `https://airgap-fetch.gitub.workers.dev/` (or self-hosted PHP) | Web fetch endpoint |
 | API Key | — | Stored in localStorage only |
 | Model | `mistral-small-latest` | Preset or custom |
 | System Persona | General | 6 templates or custom prompt |
@@ -147,12 +147,12 @@ Tests mock all network requests (CDN scripts, fonts) via `page.route()`. No real
 
 ### Static host (Netlify, Vercel, GitHub Pages)
 
-Serves the chat UI. `fetch_url.php` must be deployed separately on a PHP host.
+Serves the chat UI. Fetch proxy defaults to a Cloudflare Worker; `fetch_url.php` can be self-hosted.
 
 ### PHP host
 
 ```bash
-# Deploy fetch_url.php to any PHP-capable server
+# Self-host fetch proxy (optional, for those without Cloudflare Workers)
 cp fetch_url.php /var/www/html/
 ```
 

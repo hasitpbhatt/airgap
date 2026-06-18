@@ -366,7 +366,7 @@ let chats = [];
 let currentChatId = null;
 let settings = {
   proxyUrl: 'https://api.mistral.ai/v1/chat/completions',
-  fetchUrl: '',
+  fetchUrl: 'https://airgap-fetch.gitub.workers.dev/',
   backupFetchUrl: '',
   apiKey: '',
   injectedKey: false,
