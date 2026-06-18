@@ -29,9 +29,4 @@ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 curl_close($ch);
 
-$maxLen = 50000;
-if (strlen($content) > $maxLen) {
-  $content = substr($content, 0, $maxLen) . "\n\n... [truncated at $maxLen chars]";
-}
-
 echo json_encode(['status' => $httpCode, 'content_type' => $contentType, 'content' => $content]);

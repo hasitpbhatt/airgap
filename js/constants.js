@@ -38,7 +38,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'fetch_url',
-      description: 'Fetch and read the content from any URL on the web. Use this to read documentation, access web pages, or retrieve data from APIs. NOTE: Google blocks automated requests (HTTP 429). For web search, use the search_web tool or try DuckDuckGo (https://lite.duckduckgo.com/lite/?q=...) or other sites.',
+      description: 'Fetch and read the content from any URL on the web. Content is also stored in conversation memory (key: _fetched_<encodedUrl>) for later re-reading via read_value without re-fetching. NOTE: Google blocks automated requests (HTTP 429). For web search, use the search_web tool.',
       parameters: {
         type: 'object',
         properties: {

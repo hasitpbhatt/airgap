@@ -88,7 +88,7 @@ When a conversation reaches 15 non-system messages, the agent automatically summ
 | Tool | Description |
 |------|-------------|
 | `fetch_url` | Fetch any URL via proxy |
-| `search_web` | Parallel search across DuckDuckGo, Brave, Ecosia, Bing |
+| `search_web` | Parallel search across DuckDuckGo, SearXNG, Ecosia, Bing, Brave |
 | `read_rss` | Parse RSS 2.0 / Atom / RSS 1.0 feeds |
 | `save_file` | Create a file and offer it as a browser download |
 | `generate_chart` | Render a bar, line, or pie chart from data |
@@ -115,7 +115,7 @@ Tools are defined in `js/constants.js` and implemented in `js/tools.js`. Adding 
 
 ## Transparent fetch cache
 
-`fetch_url` caches responses per-chat in localStorage with a 5-minute TTL. Keyed by URL hash. Automatically serves cached content on repeat requests, transparent to the LLM.
+`fetch_url` caches responses per-chat in localStorage with a 5-minute TTL. Keyed by URL hash. Automatically serves cached content on repeat requests, transparent to the LLM. Content is also stored permanently under `_fetched_<encodedUrl>` in conversation memory — the LLM can re-read it via `read_value` without re-fetching.
 
 ## User commands
 

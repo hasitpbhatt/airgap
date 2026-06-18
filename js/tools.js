@@ -37,7 +37,10 @@ async function executeToolCall(toolCall) {
       if (!data.error) {
         try {
           llmStoreSet(cacheKey, JSON.stringify({ ...data, timestamp: Date.now() }));
+          const storedKey = '_fetched_' + encodeURIComponent(args.url);
+          llmStoreSet(storedKey, data.content);
         } catch {}
+        data.stored_key = '_fetched_' + encodeURIComponent(args.url);
       }
       return { ...data, cached: false };
     } catch (err) {
@@ -127,6 +130,14 @@ async function executeToolCall(toolCall) {
       const query = encodeURIComponent(args.query);
       const fetchUrl = settings.fetchUrl || 'fetch_url.php';
 
+      const searxngInstances = [
+        'https://searx.be',
+        'https://searx.tiekoetter.com',
+        'https://opnxng.com',
+        'https://search.sapti.me',
+        'https://searx.perennialte.ch'
+      ];
+
       const engines = [
         {
           name: 'DuckDuckGo',
@@ -144,23 +155,20 @@ async function executeToolCall(toolCall) {
           }
         },
         {
-          name: 'Brave',
-          url: 'https://search.brave.com/search?q=' + query,
-          parse: function(html) {
-            const results = [];
-            const blockRe = /<div[^>]*class="[^"]*snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
-            const blocks = []; let m;
-            while ((m = blockRe.exec(html)) !== null) blocks.push(m[1]);
-            for (const block of blocks) {
-              const linkRe = new RegExp('<a[^>]*href="(https?://[^"]+)"[^>]*>([\\s\\S]*?)<\\/a>', 'i');
-              const lm = linkRe.exec(block);
-              if (lm) {
-                const title = lm[2].replace(/<[^>]+>/g, '').trim();
-                if (title) results.push({ title, url: lm[1], snippet: block.replace(/<[^>]+>/g, '').replace(title, '').trim().slice(0, 200) });
+          name: 'SearXNG',
+          instances: searxngInstances.map(base => base + '/search?q=' + query + '&format=json'),
+          parse: function(content) {
+            try {
+              const json = JSON.parse(content);
+              if (json.results && Array.isArray(json.results)) {
+                return json.results.slice(0, 10).map(r => ({
+                  title: r.title || '',
+                  url: r.url || '',
+                  snippet: r.content || ''
+                }));
               }
-              if (results.length >= 10) break;
-            }
-            return results;
+            } catch {}
+            return [];
           }
         },
         {
@@ -192,16 +200,50 @@ async function executeToolCall(toolCall) {
             }
             return results;
           }
+        },
+        {
+          name: 'Brave',
+          url: 'https://search.brave.com/search?q=' + query,
+          parse: function(html) {
+            const results = [];
+            const blockRe = /<div[^>]*class="[^"]*snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+            const blocks = []; let m;
+            while ((m = blockRe.exec(html)) !== null) blocks.push(m[1]);
+            for (const block of blocks) {
+              const linkRe = new RegExp('<a[^>]*href="(https?://[^"]+)"[^>]*>([\\s\\S]*?)<\\/a>', 'i');
+              const lm = linkRe.exec(block);
+              if (lm) {
+                const title = lm[2].replace(/<[^>]+>/g, '').trim();
+                if (title) results.push({ title, url: lm[1], snippet: block.replace(/<[^>]+>/g, '').replace(title, '').trim().slice(0, 200) });
+              }
+              if (results.length >= 10) break;
+            }
+            return results;
+          }
         }
       ];
 
-      const settled = await Promise.allSettled(engines.map(e =>
-        fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal })
+      const settled = await Promise.allSettled(engines.map(e => {
+        if (e.instances) {
+          return (async () => {
+            for (const url of e.instances) {
+              try {
+                const res = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
+                const data = await res.json();
+                if (!data.error && data.content && data.content.length > 100) {
+                  return { engine: e.name, data, parse: e.parse };
+                }
+              } catch {}
+            }
+            throw new Error('All SearXNG instances failed');
+          })();
+        }
+        return fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal })
           .then(r => r.json())
-          .then(d => ({ engine: e.name, data: d, parse: e.parse }))
-      ));
+          .then(d => ({ engine: e.name, data: d, parse: e.parse }));
+      }));
 
-      const priority = ['DuckDuckGo', 'Brave', 'Ecosia', 'Bing'];
+      const priority = ['DuckDuckGo', 'SearXNG', 'Ecosia', 'Bing', 'Brave'];
       for (const name of priority) {
         const entry = settled.find(s => s.status === 'fulfilled' && s.value.engine === name);
         if (!entry) continue;
