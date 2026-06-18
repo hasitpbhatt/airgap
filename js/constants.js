@@ -330,7 +330,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'save_file',
-      description: 'Create a file with the given content and offer it as a download. Use this to generate scripts, documents, data exports, or any file the user wants to save locally.',
+      description: 'Create a file with the given content. The app will show a Download button in the chat so the user can save it locally. Use this INSTEAD of telling the user to visit a URL — do NOT make up download links. Call this tool directly with the filename and content.',
       parameters: {
         type: 'object',
         properties: {
