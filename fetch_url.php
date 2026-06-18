@@ -17,14 +17,17 @@ curl_setopt_array($ch, [
   CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; OpenCodeBot/1.0)',
 ]);
 $content = curl_exec($ch);
+
+if ($content === false) {
+  $err = curl_error($ch);
+  curl_close($ch);
+  echo json_encode(['error' => 'cURL error: ' . $err]);
+  exit;
+}
+
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 curl_close($ch);
-
-if ($content === false) {
-  echo json_encode(['error' => curl_error($ch)]);
-  exit;
-}
 
 $maxLen = 50000;
 if (strlen($content) > $maxLen) {
