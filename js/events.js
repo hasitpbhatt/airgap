@@ -51,9 +51,10 @@ function init() {
   if (settings.injectedKey) {
     elements.apiKeyInput.placeholder = 'Key set from URL';
     elements.apiKeyInput.value = '';
-  } else {
+  } else if (settings.apiKey) {
     elements.apiKeyInput.value = settings.apiKey;
   }
+  toggleShareLink();
 
   const MODEL_PRESETS = ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest', 'codestral-latest'];
   const isPreset = MODEL_PRESETS.includes(settings.modelName);
@@ -164,7 +165,25 @@ function setupEventListeners() {
       e.target.placeholder = '';
     }
     saveSettings();
+    toggleShareLink();
   });
+
+  const shareBtn = document.getElementById('gen-share-link');
+  const shareOut = document.getElementById('share-link-out');
+  shareBtn.addEventListener('click', () => {
+    if (!settings.apiKey) return;
+    const _k = '_x4';
+    let hex = '';
+    for (let i = 0; i < settings.apiKey.length; i++) {
+      const code = settings.apiKey.charCodeAt(i) ^ _k.charCodeAt(i % _k.length);
+      hex += code.toString(16).padStart(2, '0');
+    }
+    shareOut.value = window.location.origin + window.location.pathname + '?k=' + hex;
+    shareOut.style.display = '';
+    shareOut.select();
+  });
+  shareOut.addEventListener('click', () => shareOut.select());
+
   elements.modelSelect.addEventListener('change', (e) => {
     const val = e.target.value;
     if (val === 'custom') {
@@ -316,6 +335,17 @@ function setupEventListeners() {
   }
 
   window.addEventListener('resize', adjustResponsiveLayout);
+}
+
+function toggleShareLink() {
+  const group = document.getElementById('share-link-group');
+  const out = document.getElementById('share-link-out');
+  if (settings.apiKey) {
+    group.style.display = '';
+  } else {
+    group.style.display = 'none';
+    out.style.display = 'none';
+  }
 }
 
 // Bind initialization
