@@ -122,6 +122,38 @@ async function executeToolCall(toolCall) {
     };
   }
 
+  if (name === 'search_web') {
+    try {
+      const query = encodeURIComponent(args.query);
+      const fetchUrl = settings.fetchUrl || 'fetch_url.php';
+      const res = await fetch(fetchUrl + '?url=' + encodeURIComponent('https://lite.duckduckgo.com/lite/?q=' + query), {
+        signal: abortController?.signal
+      });
+      const data = await res.json();
+      if (data.error) return { error: 'Search failed: ' + data.error };
+
+      const html = data.content || '';
+      const results = [];
+      const linkRegex = /<a[^>]+href="([^"]*)"[^>]*rel="nofollow"[^>]*>([\s\S]*?)<\/a>/gi;
+      const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
+      const links = [];
+      let m;
+      while ((m = linkRegex.exec(html)) !== null) {
+        links.push({ url: m[1], title: m[2].replace(/<[^>]+>/g, '').trim() });
+      }
+      const snippets = [];
+      while ((m = snippetRegex.exec(html)) !== null) {
+        snippets.push(m[1].replace(/<[^>]+>/g, '').trim());
+      }
+      for (let i = 0; i < Math.min(links.length, 10); i++) {
+        results.push({ title: links[i].title, url: links[i].url, snippet: snippets[i] || '' });
+      }
+      return { query: args.query, results, count: results.length };
+    } catch (err) {
+      return { error: 'Search failed: ' + err.message };
+    }
+  }
+
   if (name === 'remember') {
     try {
       globalStoreSet(args.key, args.value);
@@ -198,6 +230,19 @@ function appendToolCallUI(toolCall) {
           <i data-lucide="globe" style="width: 14px; height: 14px; vertical-align: middle;"></i>
           <span class="tool-call-label">Fetching:</span>
           <code class="tool-call-url">${escapeHtml(url)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'search_web') {
+    let query = '';
+    try { query = JSON.parse(argsRaw).query || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="search" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Searching:</span>
+          <code class="tool-call-url">${escapeHtml(query)}</code>
           <span class="tool-call-status">...</span>
         </div>
       </div>
@@ -279,6 +324,16 @@ function updateToolCallUI(toolCall, result) {
           <code class="tool-call-url">${result.status} OK</code>
           <span class="tool-call-detail">(${(result.content || '').length} bytes)</span>
           ${cacheLabel}
+        </div>
+      </div>
+    `;
+  } else if (name === 'search_web') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Search done:</span>
+          <code class="tool-call-url">${result.count || 0} results</code>
         </div>
       </div>
     `;

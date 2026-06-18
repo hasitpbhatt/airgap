@@ -38,7 +38,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'fetch_url',
-      description: 'Fetch and read the content from any URL on the web. Use this to get the latest information, read documentation, access web pages, or retrieve data from APIs.',
+      description: 'Fetch and read the content from any URL on the web. Use this to read documentation, access web pages, or retrieve data from APIs. NOTE: Google blocks automated requests (HTTP 429). For web search, use the search_web tool or try DuckDuckGo (https://lite.duckduckgo.com/lite/?q=...) or other sites.',
       parameters: {
         type: 'object',
         properties: {
@@ -138,6 +138,20 @@ const AVAILABLE_TOOLS = [
           expression: { type: 'string', description: 'The mathematical expression to evaluate, e.g. "2 * (3 + 4)", "Math.sqrt(144)", "150 * 0.15" (for 15% tip)' }
         },
         required: ['expression']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_web',
+      description: 'Search the web for a query and return a list of results (titles, URLs, snippets). Uses DuckDuckGo which does not block automated requests. For fetching a specific URL, use fetch_url instead.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The search query' }
+        },
+        required: ['query']
       }
     }
   },

@@ -4,7 +4,7 @@ A gorgeous, developer-centric interface for talking to LLMs with **agentic tool 
 
 ## Features
 
-- **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), persist facts to memory (`store_value`/`read_value`), compact conversation history (`compact`), perform math (`calculate`), and check the time (`get_current_time`)
+- **Agentic Tool Calling**: The LLM can behave as an agent — fetch live web data (`fetch_url`), search the web (`search_web`), persist facts to memory (`store_value`/`read_value`), compact conversation history (`compact`), perform math (`calculate`), and check the time (`get_current_time`)
 - **Global Memory**: Cross-conversation persistent memory — `remember`/`recall`/`forget`/`forget_all` tools let the LLM store facts accessible from every chat
 - **Memory Panel**: Sidebar panel to browse, search, edit, expand, and delete all stored global memories
 - **Auto Context Pruning**: Conversations are automatically compacted via `/compact` when they exceed 15 messages — no manual housekeeping needed
@@ -103,6 +103,7 @@ Create your own custom persona with personalized instructions.
   - `remember` / `recall` / `forget` / `forget_all` — cross-conversation global memory (shared across all chats)
   - `compact` — conversation summarization
   - `get_current_time` — returns current date/time in multiple formats
+  - `search_web` — search the web via DuckDuckGo (no API key needed, returns title/url/snippet)
   - `calculate` — evaluates math expressions (safe `eval` via `Function` constructor)
 - Tool results are appended to the conversation and the API is called again
 - The loop continues up to `MAX_TOOL_LOOP` (10) iterations until a final response is generated
