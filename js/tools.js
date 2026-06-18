@@ -276,7 +276,85 @@ async function executeToolCall(toolCall) {
     }
   }
 
+  if (name === 'read_rss') {
+    try {
+      const fetchUrl = settings.fetchUrl || 'fetch_url.php';
+      const limit = Math.min(args.limit || 10, 50);
+      const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), {
+        signal: abortController?.signal
+      });
+      if (!proxyRes.ok) {
+        return { error: 'Failed to fetch feed: HTTP ' + proxyRes.status };
+      }
+      const data = await proxyRes.json();
+      if (data.error) return { error: 'Feed fetch error: ' + data.error };
+      const xml = data.content || '';
+      if (!xml) return { error: 'Empty response from feed URL' };
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'text/xml');
+      const parseError = doc.querySelector('parsererror');
+      if (parseError) return { error: 'XML parse error: ' + parseError.textContent };
+
+      const items = [];
+
+      // RSS 2.0
+      const rssItems = doc.querySelectorAll('rss > channel > item');
+      if (rssItems.length > 0) {
+        rssItems.forEach(item => {
+          if (items.length >= limit) return;
+          const title = item.querySelector('title')?.textContent || '';
+          const link = item.querySelector('link')?.textContent || '';
+          const desc = item.querySelector('description')?.textContent || '';
+          const pubDate = item.querySelector('pubDate')?.textContent || item.querySelector('dc\\:date')?.textContent || '';
+          const creator = item.querySelector('dc\\:creator')?.textContent || '';
+          items.push({ title: title.trim(), link: link.trim(), summary: stripHtml(desc).trim().slice(0, 500), date: pubDate.trim(), author: creator.trim() });
+        });
+      }
+
+      // Atom
+      const atomEntries = doc.querySelectorAll('feed > entry');
+      if (atomEntries.length > 0) {
+        atomEntries.forEach(entry => {
+          if (items.length >= limit) return;
+          const title = entry.querySelector('title')?.textContent || '';
+          const link = entry.querySelector('link[rel="alternate"]')?.getAttribute('href') || entry.querySelector('link')?.getAttribute('href') || '';
+          const content = entry.querySelector('content')?.textContent || entry.querySelector('summary')?.textContent || '';
+          const published = entry.querySelector('published')?.textContent || entry.querySelector('updated')?.textContent || '';
+          const author = entry.querySelector('author > name')?.textContent || '';
+          items.push({ title: title.trim(), link: link.trim(), summary: stripHtml(content).trim().slice(0, 500), date: published.trim(), author: author.trim() });
+        });
+      }
+
+      // RSS 1.0 / RDF
+      const rdfItems = doc.querySelectorAll('rdf\\:RDF > rdf\\:item, RDF > item');
+      if (rdfItems.length > 0) {
+        rdfItems.forEach(item => {
+          if (items.length >= limit) return;
+          const title = item.querySelector('title')?.textContent || item.querySelector('rdf\\:title')?.textContent || '';
+          const link = item.querySelector('link')?.textContent || item.querySelector('rdf\\:link')?.getAttribute('resource') || '';
+          const desc = item.querySelector('description')?.textContent || '';
+          const date = item.querySelector('dc\\:date')?.textContent || '';
+          const creator = item.querySelector('dc\\:creator')?.textContent || '';
+          items.push({ title: title.trim(), link: link.trim(), summary: stripHtml(desc).trim().slice(0, 500), date: date.trim(), author: creator.trim() });
+        });
+      }
+
+      if (items.length === 0) return { error: 'No items found in the feed' };
+
+      const feedTitle = doc.querySelector('channel > title')?.textContent || doc.querySelector('feed > title')?.textContent || '';
+      return { feed: args.url, feed_title: feedTitle.trim(), items, count: items.length };
+    } catch (err) {
+      return { error: 'RSS read failed: ' + err.message };
+    }
+  }
+
   return { error: `Unknown tool: ${name}` };
+}
+
+function stripHtml(str) {
+  if (!str) return '';
+  return str.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function appendToolCallUI(toolCall) {
@@ -309,6 +387,19 @@ function appendToolCallUI(toolCall) {
           <i data-lucide="search" style="width: 14px; height: 14px; vertical-align: middle;"></i>
           <span class="tool-call-label">Searching:</span>
           <code class="tool-call-url">${escapeHtml(query)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'read_rss') {
+    let url = '';
+    try { url = JSON.parse(argsRaw).url || argsRaw; } catch { url = argsRaw; }
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="rss" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Reading feed:</span>
+          <code class="tool-call-url">${escapeHtml(url)}</code>
           <span class="tool-call-status">...</span>
         </div>
       </div>
@@ -400,6 +491,18 @@ function updateToolCallUI(toolCall, result) {
           <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
           <span class="tool-call-label">Search done:</span>
           <code class="tool-call-url">${result.count || 0} results</code>
+        </div>
+      </div>
+    `;
+  } else if (name === 'read_rss') {
+    const feedTitle = result.feed_title || 'Feed';
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Feed read:</span>
+          <code class="tool-call-url">${escapeHtml(feedTitle)}</code>
+          <span class="tool-call-detail">(${result.count || 0} items)</span>
         </div>
       </div>
     `;

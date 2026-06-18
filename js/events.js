@@ -56,6 +56,32 @@ function init() {
   }
   toggleShareLink();
 
+  // Connect screen: show when no API key
+  const connectOverlay = document.getElementById('connect-overlay');
+  const connectInput = document.getElementById('connect-key-input');
+  const connectBtn = document.getElementById('connect-btn');
+  function hideConnectScreen() {
+    if (connectOverlay) connectOverlay.style.display = 'none';
+  }
+  if (settings.apiKey || settings.injectedKey) {
+    hideConnectScreen();
+  }
+  if (connectBtn) {
+    connectBtn.addEventListener('click', () => {
+      const key = connectInput.value.trim();
+      if (!key) return;
+      settings.apiKey = key;
+      settings.injectedKey = false;
+      elements.apiKeyInput.value = key;
+      elements.apiKeyInput.placeholder = '';
+      saveSettings();
+      hideConnectScreen();
+    });
+    connectInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') connectBtn.click();
+    });
+  }
+
   const MODEL_PRESETS = ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest', 'codestral-latest'];
   const isPreset = MODEL_PRESETS.includes(settings.modelName);
   if (isPreset) {

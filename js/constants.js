@@ -208,6 +208,21 @@ const AVAILABLE_TOOLS = [
         properties: {}
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'read_rss',
+      description: 'Fetch and parse an RSS or Atom feed. Use this to read news feeds, blog updates, podcast episodes, or any syndicated content. Returns a list of recent items with title, link, publication date, and summary.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The URL of the RSS or Atom feed' },
+          limit: { type: 'number', description: 'Maximum number of items to return (default 10, max 50)' }
+        },
+        required: ['url']
+      }
+    }
   }
 ];
 
