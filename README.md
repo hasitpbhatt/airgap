@@ -13,21 +13,7 @@ A gorgeous, developer-centric interface for talking to LLMs. Select a teaching p
 
 ## Architecture
 
-### Before Refactoring
-- Monolithic `app.js` file (1041 lines)
-- Global state scattered throughout the code
-- No TypeScript support
-- Hard to maintain and test
-
-### After Refactoring
-- Modular architecture with focused modules:
-  - `src/state.ts` - Centralized state management
-  - `src/api.ts` - API communication layer
-  - `src/ui.ts` - UI management system
-  - `src/utils.ts` - Utility functions
-- Full TypeScript support with comprehensive type definitions
-- Reactive state updates with subscriber pattern
-- Comprehensive unit tests and verification
+Single-page application with all logic in a self-contained `app.js` file and styling in `style.css`. No build tooling required — just open `index.html` in a browser.
 
 ## Installation
 
@@ -72,34 +58,15 @@ Create your own custom persona with personalized instructions.
 - Select from predefined personas or create custom system prompts
 - Each persona has specialized instructions for different learning styles
 
-## Development
+## Project Structure
 
-### Project Structure
 ```
 .
-├── src/                           # Source code
-│   ├── state.ts                  # State management
-│   ├── api.ts                     # API communication
-│   ├── ui.ts                      # UI management
-│   ├── utils.ts                   # Utility functions
-│   ├── types.ts                   # Type definitions
-│   ├── app.ts                     # Main application
-│   ├── test.js                    # Unit tests
-│   └── verify.js                  # Verification script
-├── index.html                     # Main application
-├── style.css                      # Styling
-├── REFACTORING_SUMMARY.md         # Refactoring documentation
-└── LICENSE
-```
-
-### TypeScript Support
-This project uses TypeScript for better type safety and developer experience. All source files have corresponding `.ts` versions with comprehensive type definitions.
-
-### Testing
-Run the verification script to test all functionality:
-```bash
-# In browser environment, open src/verify.js
-# Or run in Node.js with a simple test runner
+├── index.html        # Main application page
+├── style.css         # Styling
+├── app.js            # Application logic
+├── README.md         # This file
+└── LICENSE           # License
 ```
 
 ## Technical Details
