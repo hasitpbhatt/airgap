@@ -126,6 +126,20 @@ const AVAILABLE_TOOLS = [
         properties: {}
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'calculate',
+      description: 'Evaluate a mathematical expression. Use this for reliable arithmetic, conversions, or any computation instead of guessing. Supports +, -, *, /, %, parentheses, Math.* functions, and basic trigonometry.',
+      parameters: {
+        type: 'object',
+        properties: {
+          expression: { type: 'string', description: 'The mathematical expression to evaluate, e.g. "2 * (3 + 4)", "Math.sqrt(144)", "150 * 0.15" (for 15% tip)' }
+        },
+        required: ['expression']
+      }
+    }
   }
 ];
 

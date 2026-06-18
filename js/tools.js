@@ -82,6 +82,15 @@ async function executeToolCall(toolCall) {
     return { success: true, message: 'Conversation compacted successfully' };
   }
 
+  if (name === 'calculate') {
+    try {
+      const result = Function('"use strict"; return (' + args.expression + ')')();
+      return { expression: args.expression, result, type: typeof result };
+    } catch (err) {
+      return { error: `Invalid expression: ${err.message}` };
+    }
+  }
+
   if (name === 'get_current_time') {
     const now = new Date();
     return {
