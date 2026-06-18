@@ -41,8 +41,15 @@
         <div class="connect-icon"><i data-lucide="terminal"></i></div>
         <h1 class="connect-title">airgap</h1>
         <p class="connect-desc">A personal AI agent that lives in your browser.<br>No server. No install. No signup.</p>
+        <div class="connect-field-group">
+          <label class="connect-field-label" for="connect-url-input">API URL</label>
+          <input type="text" id="connect-url-input" class="setting-input" placeholder="https://api.mistral.ai/v1/chat/completions" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="connect-field-group">
+          <label class="connect-field-label" for="connect-key-input">API Key</label>
+          <input type="password" id="connect-key-input" class="setting-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        </div>
         <div class="connect-input-group">
-          <input type="password" id="connect-key-input" class="setting-input" placeholder="Paste your API key" autocomplete="off" spellcheck="false">
           <button id="connect-btn" class="connect-btn">Connect</button>
         </div>
         <p class="connect-note">Your key stays in your browser. Works with Mistral, OpenAI, or any OpenAI-compatible API.</p>

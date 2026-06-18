@@ -56,30 +56,46 @@ function init() {
   }
   toggleShareLink();
 
-  // Connect screen: show when no API key
+  // Connect screen: shown when no API key is set
   const connectOverlay = document.getElementById('connect-overlay');
   const connectInput = document.getElementById('connect-key-input');
+  const connectUrlInput = document.getElementById('connect-url-input');
   const connectBtn = document.getElementById('connect-btn');
   function hideConnectScreen() {
     if (connectOverlay) connectOverlay.style.display = 'none';
   }
-  if (settings.apiKey || settings.injectedKey) {
-    hideConnectScreen();
+  function showConnectScreen() {
+    if (connectOverlay) {
+      if (connectUrlInput) connectUrlInput.value = settings.proxyUrl;
+      connectOverlay.style.display = 'flex';
+    }
+  }
+  if (!settings.apiKey && !settings.injectedKey) {
+    showConnectScreen();
   }
   if (connectBtn) {
-    connectBtn.addEventListener('click', () => {
+    const doConnect = () => {
       const key = connectInput.value.trim();
+      const url = connectUrlInput ? connectUrlInput.value.trim() : '';
       if (!key) return;
       settings.apiKey = key;
       settings.injectedKey = false;
+      if (url) settings.proxyUrl = url;
       elements.apiKeyInput.value = key;
       elements.apiKeyInput.placeholder = '';
+      if (elements.proxyUrlInput) elements.proxyUrlInput.value = settings.proxyUrl;
       saveSettings();
       hideConnectScreen();
-    });
+    };
+    connectBtn.addEventListener('click', doConnect);
     connectInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') connectBtn.click();
+      if (e.key === 'Enter') doConnect();
     });
+    if (connectUrlInput) {
+      connectUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doConnect();
+      });
+    }
   }
 
   const MODEL_PRESETS = ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest', 'codestral-latest'];
