@@ -25,13 +25,23 @@ function init() {
     settings.proxyUrl = MISTRAL_PROXY_URL;
   }
 
-  // URL param injection: ?key=sk-... sets API key without showing in UI
+  // URL param injection: ?k=<obfuscated> — sets API key without exposing in UI
   const urlParams = new URLSearchParams(window.location.search);
-  const urlKey = urlParams.get('key');
-  if (urlKey) {
-    settings.apiKey = urlKey;
-    settings.injectedKey = true;
-    saveSettings();
+  const obfParam = urlParams.get('k');
+  if (obfParam) {
+    try {
+      const _k = '_x4';
+      const hex = obfParam;
+      let dec = '';
+      for (let i = 0; i < hex.length; i += 2) {
+        dec += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ _k.charCodeAt((i / 2) % _k.length));
+      }
+      if (dec.startsWith('sk-') || dec.startsWith('gsk_')) {
+        settings.apiKey = dec;
+        settings.injectedKey = true;
+        saveSettings();
+      }
+    } catch {}
     history.replaceState(null, '', window.location.pathname + window.location.hash);
   }
 

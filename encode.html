@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encode Key</title>
+<style>
+body { font-family: monospace; background: #111; color: #eee; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+.container { background: #1a1a2e; padding: 2rem; border-radius: 0.75rem; border: 1px solid #333; width: 90%; max-width: 480px; }
+h1 { font-size: 1.1rem; margin: 0 0 1rem; color: #a78bfa; }
+label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 0.3rem; }
+input { width: 100%; box-sizing: border-box; background: #111; border: 1px solid #333; color: #eee; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-family: inherit; font-size: 0.85rem; outline: none; }
+input:focus { border-color: #7c3aed; }
+.output { margin-top: 1rem; }
+.output input { background: #0a0a1a; color: #a78bfa; }
+.copy-btn { margin-top: 0.5rem; padding: 0.4rem 1rem; background: #7c3aed; color: #fff; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.8rem; }
+.copy-btn:hover { background: #6d28d9; }
+.note { margin-top: 0.75rem; font-size: 0.7rem; color: #666; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>&#128274; Encode API Key for URL</h1>
+  <label for="input">API Key</label>
+  <input id="input" type="text" placeholder="sk-..." autocomplete="off">
+  <div class="output">
+    <label for="output">Encoded (<code>?k=...</code>)</label>
+    <input id="output" type="text" readonly placeholder="encoded output">
+  </div>
+  <button class="copy-btn" id="copy">Copy Encoded</button>
+  <div class="note">This runs entirely in your browser. The key is never sent anywhere.</div>
+</div>
+<script>
+const _k = '_x4';
+function encode(text) {
+  let hex = '';
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i) ^ _k.charCodeAt(i % _k.length);
+    hex += code.toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+input.addEventListener('input', () => {
+  output.value = input.value ? encode(input.value) : '';
+});
+document.getElementById('copy').addEventListener('click', () => {
+  output.select(); document.execCommand('copy');
+});
+if (location.search.includes('?')) {
+  const s = new URLSearchParams(location.search);
+  const v = s.get('v');
+  if (v) { input.value = v; output.value = encode(v); }
+}
+</script>
+</body>
+</html>
