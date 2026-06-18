@@ -195,25 +195,26 @@ async function executeToolCall(toolCall) {
         }
       ];
 
-      let lastError = '';
-      for (const engine of engines) {
-        try {
-          const res = await fetch(fetchUrl + '?url=' + encodeURIComponent(engine.url), { signal: abortController?.signal });
-          const data = await res.json();
-          if (data.error) { lastError = engine.name + ': ' + data.error; continue; }
-          const html = data.content || '';
-          if (data.status === 429) { lastError = engine.name + ': rate limited'; continue; }
-          if (html.length < 100) { lastError = engine.name + ': empty response'; continue; }
-          const results = engine.parse(html);
-          if (results.length > 0) {
-            return { query: args.query, engine: engine.name, results, count: results.length };
-          }
-          lastError = engine.name + ': no results found';
-        } catch (e) {
-          lastError = engine.name + ': ' + e.message;
+      const settled = await Promise.allSettled(engines.map(e =>
+        fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal })
+          .then(r => r.json())
+          .then(d => ({ engine: e.name, data: d, parse: e.parse }))
+      ));
+
+      const priority = ['DuckDuckGo', 'Brave', 'Ecosia', 'Bing'];
+      for (const name of priority) {
+        const entry = settled.find(s => s.status === 'fulfilled' && s.value.engine === name);
+        if (!entry) continue;
+        const { data, parse } = entry.value;
+        if (data.error || data.status === 429 || !data.content || data.content.length < 100) continue;
+        const results = parse(data.content);
+        if (results.length > 0) {
+          return { query: args.query, engine: name, results, count: results.length };
         }
       }
-      return { error: 'All search engines failed. Last: ' + lastError };
+
+      const lastErr = settled.find(s => s.status === 'rejected')?.reason?.message || 'no results from any engine';
+      return { error: 'All search engines failed. ' + lastErr };
     } catch (err) {
       return { error: 'Search failed: ' + err.message };
     }
