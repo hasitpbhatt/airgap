@@ -198,6 +198,7 @@ const elements = {
   limitReachedBanner: document.getElementById('limit-reached-banner'),
   chatTextarea: document.getElementById('chat-textarea'),
   inputInfo: document.getElementById('input-info'),
+  micBtn: document.getElementById('mic-btn'),
   stopGenBtn: document.getElementById('stop-gen-btn'),
   sendBtn: document.getElementById('send-btn')
 };

@@ -207,6 +207,54 @@ function setupEventListeners() {
   elements.sendBtn.addEventListener('click', triggerSend);
   elements.stopGenBtn.addEventListener('click', stopGenerating);
 
+  // Voice input (SpeechRecognition)
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let isListening = false;
+
+  if (SpeechRecognition && elements.micBtn) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      elements.chatTextarea.value = transcript;
+      handleTextareaAutoGrow();
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      elements.micBtn.classList.remove('recording');
+      lucide.createIcons();
+    };
+
+    recognition.onerror = () => {
+      isListening = false;
+      elements.micBtn.classList.remove('recording');
+    };
+
+    elements.micBtn.addEventListener('click', () => {
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
+      try {
+        recognition.start();
+        isListening = true;
+        elements.micBtn.classList.add('recording');
+        elements.chatTextarea.focus();
+      } catch {}
+    });
+  } else if (elements.micBtn) {
+    elements.micBtn.classList.add('hidden');
+  }
+
   window.addEventListener('resize', adjustResponsiveLayout);
 }
 
