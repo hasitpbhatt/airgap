@@ -372,7 +372,12 @@ async function executeToolCall(toolCall) {
         return { error: 'Notification permission not granted' };
       }
     }
-    new Notification(args.title || 'Notification', { body: args.body || '' });
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(args.title || 'Notification', { body: args.body || '' });
+    } catch {
+      new Notification(args.title || 'Notification', { body: args.body || '' });
+    }
     return { success: true, title: args.title, body: args.body };
   }
 
