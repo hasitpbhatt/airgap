@@ -51,6 +51,7 @@ function init() {
   // Bind settings to UI
   elements.proxyUrlInput.value = settings.proxyUrl;
   if (elements.fetchUrlInput) elements.fetchUrlInput.value = settings.fetchUrl;
+  if (elements.backupFetchUrlInput) elements.backupFetchUrlInput.value = settings.backupFetchUrl;
   if (settings.injectedKey) {
     elements.apiKeyInput.placeholder = 'Key set from URL';
   }
@@ -200,6 +201,12 @@ function setupEventListeners() {
   if (elements.fetchUrlInput) {
     elements.fetchUrlInput.addEventListener('input', (e) => {
       settings.fetchUrl = e.target.value.trim();
+      saveSettings();
+    });
+  }
+  if (elements.backupFetchUrlInput) {
+    elements.backupFetchUrlInput.addEventListener('input', (e) => {
+      settings.backupFetchUrl = e.target.value.trim();
       saveSettings();
     });
   }

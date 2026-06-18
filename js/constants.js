@@ -120,7 +120,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'get_current_time',
-      description: 'Get the current date, time, and timezone. Use this when you need to know what time it is, what the date is, or what day of the week it is.',
+      description: 'Get the current date, time, and timezone. ALWAYS call this tool when a user asks about "today", "now", "last week", "tomorrow", or any relative date/time — your training data has a fixed cutoff and you cannot know the current date otherwise.',
       parameters: {
         type: 'object',
         properties: {}
@@ -367,6 +367,7 @@ let currentChatId = null;
 let settings = {
   proxyUrl: 'https://api.mistral.ai/v1/chat/completions',
   fetchUrl: '',
+  backupFetchUrl: '',
   apiKey: '',
   injectedKey: false,
   modelName: 'mistral-small-latest',
@@ -397,6 +398,7 @@ const elements = {
   // Inputs
   proxyUrlInput: document.getElementById('proxy-url'),
   fetchUrlInput: document.getElementById('fetch-url'),
+  backupFetchUrlInput: document.getElementById('backup-fetch-url'),
   apiKeyInput: document.getElementById('api-key'),
   modelSelect: document.getElementById('model-select'),
   customModelGroup: document.getElementById('custom-model-group'),

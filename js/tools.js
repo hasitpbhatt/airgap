@@ -8,44 +8,72 @@ async function executeToolCall(toolCall) {
   }
 
   if (name === 'fetch_url') {
-    const CACHE_TTL = 300000; // 5 minutes
+    const CACHE_TTL = 300000;
     const cacheKey = '_fetch_cache_' + encodeURIComponent(args.url);
 
     try {
       const cachedRaw = llmStoreGet(cacheKey);
       if (cachedRaw) {
         const cached = JSON.parse(cachedRaw);
-        const age = Date.now() - cached.timestamp;
-        if (age < CACHE_TTL) {
-          return { ...cached, cached: true, age_ms: age };
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+          return { ...cached, cached: true, age_ms: Date.now() - cached.timestamp };
         }
       }
     } catch {}
 
+    // Check domain block
     try {
-      const fetchUrl = settings.fetchUrl || 'fetch_url.php';
-      const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), {
-        signal: abortController?.signal
-      });
-
-      if (!proxyRes.ok) {
-        const errText = await proxyRes.text().catch(() => '');
-        return { error: `Fetch proxy error ${proxyRes.status}: ${errText || proxyRes.statusText}` };
+      const host = new URL(args.url).host;
+      const blockRaw = llmStoreGet('_blocked_domain_' + host);
+      if (blockRaw) {
+        const block = JSON.parse(blockRaw);
+        if (Date.now() < block.until) {
+          return { error: 'Domain ' + host + ' is temporarily blocked (retry after ' + Math.ceil((block.until - Date.now()) / 1000) + 's)', blocked: true, retry_after: Math.ceil((block.until - Date.now()) / 1000) };
+        }
       }
+    } catch {}
 
-      const data = await proxyRes.json();
-      if (!data.error) {
-        try {
-          llmStoreSet(cacheKey, JSON.stringify({ ...data, timestamp: Date.now() }));
-          const storedKey = '_fetched_' + encodeURIComponent(args.url);
-          llmStoreSet(storedKey, data.content);
-        } catch {}
-        data.stored_key = '_fetched_' + encodeURIComponent(args.url);
-      }
-      return { ...data, cached: false };
-    } catch (err) {
-      return { error: err.message };
+    var proxyUrls = [settings.fetchUrl || 'fetch_url.php'];
+    if (settings.backupFetchUrl) {
+      proxyUrls.push(settings.backupFetchUrl);
     }
+
+    var lastErr = null;
+    for (var pi = 0; pi < proxyUrls.length; pi++) {
+      var fetchUrl = proxyUrls[pi];
+      try {
+        var proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), { signal: abortController?.signal });
+        var data = await proxyRes.json();
+
+        if (data.status === 429 || data.error) {
+          var host;
+          try { host = new URL(args.url).host; } catch {}
+          if (host && data.retry_after) {
+            try { llmStoreSet('_blocked_domain_' + host, JSON.stringify({ until: Date.now() + data.retry_after * 1000 })); } catch {}
+          }
+          lastErr = data.error || ('HTTP ' + data.status);
+          if (data.status === 429) {
+            // Try backup proxy if available
+            continue;
+          }
+          return { error: data.error || ('HTTP ' + data.status) };
+        }
+
+        if (!data.error) {
+          try {
+            llmStoreSet(cacheKey, JSON.stringify({ ...data, timestamp: Date.now() }));
+            var storedKey = '_fetched_' + encodeURIComponent(args.url);
+            llmStoreSet(storedKey, data.content);
+          } catch {}
+          data.stored_key = '_fetched_' + encodeURIComponent(args.url);
+        }
+        return { ...data, cached: false };
+      } catch (err) {
+        lastErr = err.message;
+      }
+    }
+
+    return { error: 'All proxies failed: ' + lastErr };
   }
 
   if (name === 'store_value') {
