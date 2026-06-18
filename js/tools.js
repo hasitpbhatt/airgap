@@ -82,6 +82,17 @@ async function executeToolCall(toolCall) {
     return { success: true, message: 'Conversation compacted successfully' };
   }
 
+  if (name === 'get_current_time') {
+    const now = new Date();
+    return {
+      iso: now.toISOString(),
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      weekday: now.toLocaleDateString(undefined, { weekday: 'long' })
+    };
+  }
+
   return { error: `Unknown tool: ${name}` };
 }
 
