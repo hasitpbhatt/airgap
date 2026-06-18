@@ -32,11 +32,31 @@ const PERSONAS = {
   }
 };
 
+// Tool Definitions for Agentic Behaviour
+const AVAILABLE_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'fetch_url',
+      description: 'Fetch and read the content from any URL on the web. Use this to get the latest information, read documentation, access web pages, or retrieve data from APIs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The complete URL (including protocol, e.g. https://) to fetch' }
+        },
+        required: ['url']
+      }
+    }
+  }
+];
+const MAX_TOOL_LOOP = 10;
+
 // State Variables
 let chats = [];
 let currentChatId = null;
 let settings = {
   proxyUrl: 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/',
+  fetchUrl: '',
   apiKey: '',
   modelName: 'mistral-small-latest',
   useMaxTurns: false,
@@ -62,6 +82,7 @@ const elements = {
   
   // Inputs
   proxyUrlInput: document.getElementById('proxy-url'),
+  fetchUrlInput: document.getElementById('fetch-url'),
   apiKeyInput: document.getElementById('api-key'),
   modelSelect: document.getElementById('model-select'),
   customModelGroup: document.getElementById('custom-model-group'),
@@ -127,6 +148,7 @@ function init() {
   
   // Bind settings to UI
   elements.proxyUrlInput.value = settings.proxyUrl;
+  if (elements.fetchUrlInput) elements.fetchUrlInput.value = settings.fetchUrl;
   elements.apiKeyInput.value = settings.apiKey;
   
   // Bind Model Selection presets
@@ -205,6 +227,12 @@ function setupEventListeners() {
     settings.proxyUrl = e.target.value.trim();
     saveSettings();
   });
+  if (elements.fetchUrlInput) {
+    elements.fetchUrlInput.addEventListener('input', (e) => {
+      settings.fetchUrl = e.target.value.trim();
+      saveSettings();
+    });
+  }
   elements.apiKeyInput.addEventListener('input', (e) => {
     settings.apiKey = e.target.value.trim();
     saveSettings();
@@ -943,62 +971,100 @@ async function triggerSendAPI() {
   scrollToBottom();
 
   abortController = new AbortController();
-  const apiMessages = activeChat.messages.map(m => ({
+  const messages = activeChat.messages.map(m => ({
     role: m.role,
     content: m.content
   }));
+  let toolDepth = 0;
 
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (settings.apiKey) {
-      headers['Authorization'] = `Bearer ${settings.apiKey}`;
-    }
+    while (toolDepth < MAX_TOOL_LOOP) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (settings.apiKey) {
+        headers['Authorization'] = `Bearer ${settings.apiKey}`;
+      }
 
-    const res = await fetch(settings.proxyUrl, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
+      const body = {
         model: settings.modelName || 'mistral-small-latest',
-        messages: apiMessages
-      }),
-      signal: abortController.signal
-    });
+        messages
+      };
+      if (AVAILABLE_TOOLS.length > 0) {
+        body.tools = AVAILABLE_TOOLS;
+      }
 
-    const bubble = document.getElementById('temp-loading-bubble');
-    if (bubble) bubble.remove();
+      const res = await fetch(settings.proxyUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: abortController.signal
+      });
 
-    if (!res.ok) {
-      throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const message = data.choices?.[0]?.message;
+
+      if (message?.tool_calls && message.tool_calls.length > 0) {
+        messages.push({
+          role: 'assistant',
+          content: null,
+          tool_calls: message.tool_calls.map(tc => ({
+            id: tc.id,
+            type: 'function',
+            function: { name: tc.function.name, arguments: tc.function.arguments }
+          }))
+        });
+
+        for (const tc of message.tool_calls) {
+          appendToolCallUI(tc);
+          const result = await executeToolCall(tc);
+          updateToolCallUI(tc, result);
+          messages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            content: JSON.stringify(result)
+          });
+        }
+
+        toolDepth++;
+        continue;
+      }
+
+      const bubble = document.getElementById('temp-loading-bubble');
+      if (bubble) bubble.remove();
+
+      const content = message?.content || '';
+      if (content) {
+        activeChat.messages.push({ role: 'assistant', content });
+        activeChat.turnCount++;
+        saveChats();
+      } else {
+        throw new Error('Received an empty response from the server.');
+      }
+
+      return;
     }
 
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || data.content || '';
-
-    if (content) {
-      activeChat.messages.push({ role: 'assistant', content: content });
-      activeChat.turnCount++;
-      saveChats();
-    } else {
-      throw new Error('Received an empty response from the server.');
-    }
-
+    throw new Error(`Agent exceeded maximum of ${MAX_TOOL_LOOP} tool call rounds.`);
   } catch (err) {
     const bubble = document.getElementById('temp-loading-bubble');
     if (bubble) bubble.remove();
 
     if (err.name === 'AbortError') {
-      activeChat.messages.push({ 
-        role: 'assistant', 
-        content: 'Response generation was stopped.', 
-        isStopped: true 
+      activeChat.messages.push({
+        role: 'assistant',
+        content: 'Response generation was stopped.',
+        isStopped: true
       });
       saveChats();
     } else {
-      console.error("API Fetch Error:", err);
-      activeChat.messages.push({ 
-        role: 'assistant', 
-        content: `Failed to fetch AI response: ${err.message}`, 
-        isError: true 
+      console.error('API Fetch Error:', err);
+      activeChat.messages.push({
+        role: 'assistant',
+        content: `Failed to fetch AI response: ${err.message}`,
+        isError: true
       });
       saveChats();
     }
@@ -1008,6 +1074,100 @@ async function triggerSendAPI() {
     renderChatFeed();
     updateInputUIState();
   }
+}
+
+async function executeToolCall(toolCall) {
+  const { name, arguments: argsRaw } = toolCall.function;
+  let args;
+  try {
+    args = JSON.parse(argsRaw);
+  } catch {
+    return { error: `Invalid tool arguments: ${argsRaw}` };
+  }
+
+  if (name === 'fetch_url') {
+    try {
+      const fetchUrl = settings.fetchUrl || 'fetch_url.php';
+      const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), {
+        signal: abortController?.signal
+      });
+
+      if (!proxyRes.ok) {
+        const errText = await proxyRes.text().catch(() => '');
+        return { error: `Fetch proxy error ${proxyRes.status}: ${errText || proxyRes.statusText}` };
+      }
+
+      return await proxyRes.json();
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  return { error: `Unknown tool: ${name}` };
+}
+
+function appendToolCallUI(toolCall) {
+  const { name, arguments: argsRaw } = toolCall.function;
+  let url = '';
+  try {
+    url = JSON.parse(argsRaw).url || argsRaw;
+  } catch { url = argsRaw; }
+
+  const loadingBubble = document.getElementById('temp-loading-bubble');
+  const row = document.createElement('div');
+  row.className = 'message-row tool-call';
+  row.id = `tool-call-${toolCall.id}`;
+  row.innerHTML = `
+    <div class="message-bubble tool-call-bubble">
+      <div class="msg-content">
+        <i data-lucide="globe" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+        <span class="tool-call-label">Fetching:</span>
+        <code class="tool-call-url">${escapeHtml(url)}</code>
+        <span class="tool-call-status">...</span>
+      </div>
+    </div>
+  `;
+
+  if (loadingBubble) {
+    elements.chatFeed.insertBefore(row, loadingBubble);
+  } else {
+    elements.chatFeed.appendChild(row);
+  }
+
+  scrollToBottom();
+  lucide.createIcons();
+}
+
+function updateToolCallUI(toolCall, result) {
+  const row = document.getElementById(`tool-call-${toolCall.id}`);
+  if (!row) return;
+
+  if (result.error) {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-error">
+        <div class="msg-content">
+          <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--danger));"></i>
+          <span class="tool-call-label">Fetch failed:</span>
+          <code class="tool-call-url">${escapeHtml(result.error)}</code>
+        </div>
+      </div>
+    `;
+  } else {
+    const preview = (result.content || '').slice(0, 80).replace(/\s+/g, ' ').trim();
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Fetched:</span>
+          <code class="tool-call-url">${result.status} OK</code>
+          <span class="tool-call-detail">(${(result.content || '').length} bytes)</span>
+        </div>
+      </div>
+    `;
+  }
+
+  scrollToBottom();
+  lucide.createIcons();
 }
 
 function retryMessage(errorIndex) {
@@ -1031,7 +1191,7 @@ function setGeneratingState(generating) {
   elements.chatTextarea.disabled = generating;
   elements.sendBtn.style.display = generating ? 'none' : 'flex';
   elements.stopGenBtn.style.display = generating ? 'flex' : 'none';
-  
+
   if (!generating) {
     elements.chatTextarea.focus();
   }
