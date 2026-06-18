@@ -1,0 +1,14 @@
+{
+  "name": "OpenCode Chat",
+  "short_name": "OpenCode",
+  "description": "Developer LLM interface with agentic tool calling",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "type": "image/svg+xml", "sizes": "512x512" },
+    { "src": "icon.svg", "type": "image/svg+xml", "sizes": "192x192" }
+  ]
+}
