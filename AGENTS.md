@@ -18,6 +18,10 @@
 - Remaining high-impact: #3 (streaming SSE), #2 (slash command menu).
 - Everything else in backlog: #7 (drag-drop), #9 (token counter), #8 (search), #1 (in-chat search), #13 (branching), #14 (PWA), #11 (multi-model), #12 (custom tools).
 
+## PR conventions
+- Every fix or feature must have a corresponding GitHub issue — reference with `Fixes #N` in commit body.
+- Every PR must include tests covering the change.
+
 ## Misc
 - Prefer editing existing files over creating new ones.
 - Verify with `npm test` before committing.
