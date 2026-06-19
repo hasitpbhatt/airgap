@@ -197,6 +197,27 @@ async function triggerSendAPI() {
           }
         }
 
+        // Create a new loading bubble for the next streaming phase
+        const nextRow = document.createElement('div');
+        nextRow.className = 'message-row assistant';
+        nextRow.id = 'temp-loading-bubble';
+        nextRow.innerHTML = `
+          <div class="message-bubble">
+            <div class="msg-header assistant">
+              ${PERSONAS[activeChat.persona]?.icon || '🤖'} ${PERSONAS[activeChat.persona]?.label || 'Assistant'}
+            </div>
+            <div class="msg-content">
+              <div class="typing-indicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+            </div>
+          </div>
+        `;
+        elements.chatFeed.appendChild(nextRow);
+        tryAutoScroll();
+
         toolDepth++;
         continue;
       }
@@ -210,6 +231,9 @@ async function triggerSendAPI() {
 
         if (saveFileUsed) {
           streamContent = streamContent.replace(/\[([^\]]*)\]\(https?:\/\/[^\)]+\)/g, '$1');
+          streamContent = streamContent.replace(/https?:\/\/\S+/g, '');
+          streamContent = streamContent.replace(/\bdownload\b/gi, '');
+          streamContent = streamContent.replace(/\s{2,}/g, ' ').trim();
         }
         activeChat.messages.push({ role: 'assistant', content: streamContent });
         activeChat.turnCount++;

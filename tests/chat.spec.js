@@ -291,6 +291,127 @@ test.describe('Sender API', () => {
     });
     expect(r.errorMsg).toContain('exceeded maximum');
   });
+
+  test('shows new loading bubble after tool calls for second stream', async ({ page }) => {
+    const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+    await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
+    await seedChat(page, {
+      messages: [
+        { role: 'system', content: 'You are helpful.' },
+        { role: 'user', content: 'Fetch and summarize.' },
+      ],
+    });
+    let callCount = 0;
+    await page.route(apiUrl, async (route) => {
+      callCount++;
+      if (callCount === 1) {
+        await route.fulfill({
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            {
+              id: '1', object: 'chat.completion.chunk', choices: [{
+                index: 0,
+                delta: {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [{
+                    index: 0,
+                    id: 'call_fetch',
+                    type: 'function',
+                    function: { name: 'get_current_time', arguments: '{}' }
+                  }]
+                },
+                finish_reason: 'tool_calls'
+              }]
+            }
+          ]),
+        });
+      } else {
+        await route.fulfill({
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            { id: '2', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'The time is now.' }, finish_reason: 'stop' }] }
+          ]),
+        });
+      }
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+
+    await page.evaluate(async () => {
+      const bubbleCountBefore = document.querySelectorAll('.message-row.assistant').length;
+      await triggerSendAPI();
+      const assistantRowsAfter = document.querySelectorAll('.message-row.assistant');
+      const finalBubble = assistantRowsAfter[assistantRowsAfter.length - 1];
+      return {
+        assistantRowCount: assistantRowsAfter.length,
+        finalContent: finalBubble?.querySelector('.msg-content')?.textContent || '',
+      };
+    }).then(function (r) {
+      expect(r.assistantRowCount).toBeGreaterThanOrEqual(1);
+      expect(r.finalContent).toContain('The time is now.');
+    });
+  });
+
+  test('strips download and URLs from save_file response', async ({ page }) => {
+    const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+    await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
+    await seedChat(page, {
+      messages: [
+        { role: 'system', content: 'You are helpful.' },
+        { role: 'user', content: 'Create a file.' },
+      ],
+    });
+    let callCount = 0;
+    await page.route(apiUrl, async (route) => {
+      callCount++;
+      if (callCount === 1) {
+        await route.fulfill({
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            {
+              id: '1', object: 'chat.completion.chunk', choices: [{
+                index: 0,
+                delta: {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [{
+                    index: 0,
+                    id: 'call_save',
+                    type: 'function',
+                    function: { name: 'save_file', arguments: '{"filename":"test.txt","content":"hello"}' }
+                  }]
+                },
+                finish_reason: 'tool_calls'
+              }]
+            }
+          ]),
+        });
+      } else {
+        await route.fulfill({
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            { id: '2', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'You can download the file at https://example.com/file.txt. Please download it now.' }, finish_reason: 'stop' }] }
+          ]),
+        });
+      }
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+
+    await page.evaluate(async () => await triggerSendAPI());
+    await page.waitForTimeout(300);
+
+    const r = await page.evaluate(function () {
+      const active = getActiveChat();
+      return {
+        lastContent: active?.messages?.[active.messages.length - 1]?.content || '',
+      };
+    });
+    expect(r.lastContent).not.toContain('download');
+    expect(r.lastContent).not.toContain('https://');
+    expect(r.lastContent).not.toContain('example.com');
+  });
 });
 
 test.describe('UI Rendering', () => {

@@ -330,7 +330,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'save_file',
-      description: 'Create a file with the given content. The app automatically shows a Download button in the chat — the user can click it to save. NEVER mention a download URL, link, or hosting service in your response text — just confirm the file was saved. Call this tool directly with the filename and content; do NOT fabricate download URLs.',
+      description: 'Create a file with the given content. The app automatically shows a Download button in the chat — the user can click it to save. STRICT RULES: (1) NEVER use the word "download" in your response. (2) NEVER mention any URL, link, or hosting service. (3) Just confirm the file was saved — e.g. "Saved as resume.txt". (4) Call this tool directly with the filename and content; do NOT fabricate download URLs.',
       parameters: {
         type: 'object',
         properties: {
@@ -419,6 +419,7 @@ const elements = {
 
   // Footer Input
   limitReachedBanner: document.getElementById('limit-reached-banner'),
+  slashMenu: document.getElementById('slash-menu'),
   chatTextarea: document.getElementById('chat-textarea'),
   inputInfo: document.getElementById('input-info'),
   micBtn: document.getElementById('mic-btn'),

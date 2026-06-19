@@ -69,5 +69,7 @@ Always add a `mockFetchProxyRaw` test when modifying proxy-handling code to guar
 1. Branch from `main`
 2. Make changes
 3. Run `npm test` — all tests must pass
-4. Open a PR against `main`
-5. CI runs the full test suite automatically
+4. Every PR must include tests covering the new behavior or fix
+5. Every fix or feature must have a corresponding GitHub issue — reference it with `Fixes #N` in the commit body
+6. Open a PR against `main`
+7. CI runs the full test suite automatically
