@@ -209,10 +209,20 @@
             <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
             <span>Clear</span>
           </button>
-          <button class="header-btn" id="export-chat-btn" title="Export conversation as JSON">
-            <i data-lucide="download" style="width: 14px; height: 12px;"></i>
-            <span>Export</span>
-          </button>
+          <div class="export-wrapper">
+            <button class="header-btn" id="export-chat-btn" title="Export conversation">
+              <i data-lucide="download" style="width: 14px; height: 12px;"></i>
+              <span>Export</span>
+            </button>
+            <button class="header-btn export-drop-btn" id="export-drop-btn" title="Export format">
+              <i data-lucide="chevron-down" style="width: 10px; height: 10px;"></i>
+            </button>
+            <div class="export-dropdown" id="export-dropdown" style="display:none;">
+              <button class="export-option" data-format="json">JSON</button>
+              <button class="export-option" data-format="markdown">Markdown</button>
+              <button class="export-option" data-format="text">Plain Text</button>
+            </div>
+          </div>
         </div>
       </header>
 

@@ -1486,4 +1486,46 @@ test.describe('Edge cases', () => {
       expect(await result).toBe(false);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Export conversation (#10)
+  // ---------------------------------------------------------------------------
+  test.describe('Export conversation', () => {
+    test.beforeEach(async ({ page }) => {
+      await clearStorage(page);
+      await seedSettings(page, { apiKey: 'test-key' });
+      await page.goto(INDEX);
+      await page.waitForLoadState('networkidle');
+    });
+
+    test('Export button downloads JSON by default', async ({ page }) => {
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('#export-chat-btn').click();
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toMatch(/\.json$/);
+    });
+
+    test('dropdown shows format options on click', async ({ page }) => {
+      const dropdown = page.locator('#export-dropdown');
+      await expect(dropdown).toBeHidden();
+      await page.locator('#export-drop-btn').click();
+      await expect(dropdown).toBeVisible();
+    });
+
+    test('Markdown option downloads .md file', async ({ page }) => {
+      await page.locator('#export-drop-btn').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('.export-option[data-format="markdown"]').click();
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toMatch(/\.md$/);
+    });
+
+    test('Plain Text option downloads .txt file', async ({ page }) => {
+      await page.locator('#export-drop-btn').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('.export-option[data-format="text"]').click();
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toMatch(/\.txt$/);
+    });
+  });
 });

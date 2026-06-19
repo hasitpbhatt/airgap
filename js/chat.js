@@ -211,17 +211,51 @@ async function clearCurrentChat() {
   }
 }
 
-function exportCurrentChat() {
+function exportCurrentChat(format) {
   const activeChat = getActiveChat();
   if (!activeChat) return;
+  format = format || 'json';
 
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeChat, null, 2));
+  const slug = activeChat.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  let blob, ext;
+
+  if (format === 'markdown') {
+    ext = 'md';
+    let md = `# ${activeChat.title}\n\n`;
+    activeChat.messages.forEach(msg => {
+      if (msg.role === 'system') return;
+      if (msg.role === 'user') {
+        md += `**You:** ${msg.content}\n\n`;
+      } else {
+        md += `**Assistant:**\n${msg.content}\n\n`;
+      }
+    });
+    blob = new Blob([md], { type: 'text/markdown' });
+  } else if (format === 'text') {
+    ext = 'txt';
+    let txt = `${activeChat.title}\n${'='.repeat(activeChat.title.length)}\n\n`;
+    activeChat.messages.forEach(msg => {
+      if (msg.role === 'system') return;
+      if (msg.role === 'user') {
+        txt += `You: ${msg.content}\n\n`;
+      } else {
+        txt += `Assistant:\n${msg.content}\n\n`;
+      }
+    });
+    blob = new Blob([txt], { type: 'text/plain' });
+  } else {
+    ext = 'json';
+    blob = new Blob([JSON.stringify(activeChat, null, 2)], { type: 'application/json' });
+  }
+
+  const url = URL.createObjectURL(blob);
   const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", activeChat.title.toLowerCase().replace(/[^a-z0-9]+/g, '_') + "_export.json");
+  downloadAnchor.setAttribute("href", url);
+  downloadAnchor.setAttribute("download", `${slug}_export.${ext}`);
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 // Chat view rendering (Markdown + Prism + KaTeX)

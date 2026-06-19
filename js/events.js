@@ -325,7 +325,23 @@ function setupEventListeners() {
 
   elements.editTitleBtn.addEventListener('click', startEditingTitle);
   elements.clearChatBtn.addEventListener('click', clearCurrentChat);
-  elements.exportChatBtn.addEventListener('click', exportCurrentChat);
+
+  // Export dropdown
+  const exportDropdown = document.getElementById('export-dropdown');
+  const exportDropBtn = document.getElementById('export-drop-btn');
+  elements.exportChatBtn.addEventListener('click', () => exportCurrentChat('json'));
+  exportDropBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportDropdown.style.display = exportDropdown.style.display === 'block' ? 'none' : 'block';
+  });
+  document.addEventListener('click', () => { exportDropdown.style.display = 'none'; });
+  exportDropdown.querySelectorAll('.export-option').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportCurrentChat(btn.dataset.format);
+      exportDropdown.style.display = 'none';
+    });
+  });
 
   // Chat Input logic
   elements.chatTextarea.addEventListener('input', handleTextareaAutoGrow);
