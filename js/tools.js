@@ -33,7 +33,10 @@ async function executeToolCall(toolCall) {
       }
     } catch {}
 
-    var proxyUrls = [settings.fetchUrl || 'https://airgap-fetch.gitub.workers.dev/'];
+    var proxyUrls = ['https://airgap-fetch.gitub.workers.dev/'];
+    if (settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/') {
+      proxyUrls.push(settings.fetchUrl);
+    }
     if (settings.backupFetchUrl) {
       proxyUrls.push(settings.backupFetchUrl);
     }
@@ -481,9 +484,9 @@ async function executeToolCall(toolCall) {
 
   if (name === 'read_rss') {
     try {
-      const fetchUrl = settings.fetchUrl || 'https://airgap-fetch.gitub.workers.dev/';
+      var rssProxyUrl = settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/' ? settings.fetchUrl : 'https://airgap-fetch.gitub.workers.dev/';
       const limit = Math.min(args.limit || 10, 50);
-      const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), {
+      const proxyRes = await fetch(rssProxyUrl + '?url=' + encodeURIComponent(args.url), {
         signal: abortController?.signal
       });
       if (!proxyRes.ok) {
