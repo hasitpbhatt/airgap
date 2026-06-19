@@ -295,6 +295,22 @@ async function mockFetchProxy(page, responses = {}) {
   });
 }
 
+// Proxy mock that returns raw content (not JSON-wrapped) — simulates a
+// proxy that does not wrap responses in { content: ..., status: ... }.
+// This guards against regression if the proxy format changes.
+async function mockFetchProxyRaw(page, responses = {}) {
+  await page.route('**/airgap-fetch.gitub.workers.dev/**', async (route) => {
+    const url = route.request().url();
+    const target = new URL(url).searchParams.get('url') || '';
+    const handler = responses[target];
+    if (handler) return handler(route);
+    return route.fulfill({
+      contentType: 'text/html',
+      body: '<html>mock raw proxy</html>',
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tool Execution — Per-chat storage (store_value / read_value / list / delete)
 // ---------------------------------------------------------------------------
@@ -722,6 +738,19 @@ test.describe('Tool execution — fetch_url', () => {
     expect(r.content).toContain('Hello from mock');
   });
 
+  test('works with raw HTML proxy response (not JSON-wrapped)', async ({ page }) => {
+    // Override the beforeEach mockFetchProxy to return raw HTML
+    await mockFetchProxyRaw(page);
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+    const r = await page.evaluate(async () => {
+      return await executeToolCall({
+        function: { name: 'fetch_url', arguments: '{"url":"https://raw.example.com"}' }
+      });
+    });
+    expect(r.content).toContain('mock raw proxy');
+  });
+
   test('domain block prevents subsequent requests after 429', async ({ page }) => {
     // Replace proxy mock to return 429 for this test
     const r = await page.evaluate(async () => {
@@ -733,6 +762,8 @@ test.describe('Tool execution — fetch_url', () => {
           callCount++;
           return {
             ok: false,
+            headers: { get: () => 'application/json' },
+            text: async () => JSON.stringify({ status: 429, error: 'Rate limited', retry_after: 60 }),
             json: async () => ({
               status: 429,
               error: 'Rate limited',
@@ -841,6 +872,38 @@ test.describe('Tool execution — read_rss', () => {
     expect(r.count).toBe(1);
     expect(r.items[0].title).toBe('Atom Entry');
     expect(r.items[0].link).toBe('https://example.com/atom1');
+  });
+
+  test('works with raw XML proxy response (not JSON-wrapped)', async ({ page }) => {
+    await mockFetchProxyRaw(page, {
+      'https://example.com/raw-feed.xml': async (route) => {
+        return route.fulfill({
+          contentType: 'text/xml',
+          body: `<?xml version="1.0"?>
+            <rss version="2.0">
+              <channel>
+                <title>Raw Feed</title>
+                <item>
+                  <title>Raw Item</title>
+                  <link>https://example.com/raw</link>
+                  <description>From raw proxy</description>
+                </item>
+              </channel>
+            </rss>`,
+        });
+      },
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+
+    const r = await page.evaluate(async () => {
+      return await executeToolCall({
+        function: { name: 'read_rss', arguments: '{"url":"https://example.com/raw-feed.xml","limit":5}' }
+      });
+    });
+    expect(r.feed_title).toBe('Raw Feed');
+    expect(r.count).toBe(1);
+    expect(r.items[0].title).toBe('Raw Item');
   });
 
   test('returns error on invalid XML', async ({ page }) => {

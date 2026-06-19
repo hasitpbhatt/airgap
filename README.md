@@ -23,6 +23,7 @@ Web access uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
 index.html ──┬── style.css
              ├── manifest.json
              ├── icon.svg
+             ├── worker.js          Cloudflare Worker source (deploy separately)
              └── js/ ──┬── constants.js    Tool definitions, state, DOM refs
                        ├── utils.js        Rendering, encoding, helpers
                        ├── storage.js      localStorage abstraction
@@ -52,7 +53,7 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 
 - **Browser** renders the chat UI, manages localStorage, runs tools
 - **LLM API** receives messages + tool definitions, returns text or `tool_calls`
-- **Fetch proxy** uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
+- **Fetch proxy** uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`). Source in [`worker.js`](worker.js).
 
 ## Configuration
 
@@ -134,7 +135,7 @@ npx playwright install chromium
 npm test
 ```
 
-Tests mock all network requests (CDN scripts, fonts) via `page.route()`. No real API server needed. 14 tests across 6 suites.
+Tests mock all network requests (CDN scripts, fonts, proxy) via `page.route()`. No real API server needed. 71 tests.
 
 ### File conventions
 
@@ -143,6 +144,16 @@ Tests mock all network requests (CDN scripts, fonts) via `page.route()`. No real
 - localStorage keys: `opencode_settings`, `opencode_chats`, `opencode_current_chat_id`, `llm_store_<chatId>_*`, `global_memory_*`, `_fetch_cache_*`
 
 ## Deployment
+
+### Cloudflare Worker (fetch proxy)
+
+The file [`worker.js`](worker.js) is a Cloudflare Worker that wraps fetched content in JSON. Deploy it:
+
+```bash
+npx wrangler deploy worker.js --name airgap-fetch
+```
+
+The client code handles both JSON-wrapped and raw proxy responses, so you can also use any proxy that returns the raw response body.
 
 ### Static host (Netlify, Vercel, GitHub Pages)
 

@@ -1,3 +1,14 @@
+async function parseProxyResponse(res) {
+  var text = await res.text();
+  try {
+    var json = JSON.parse(text);
+    if (json.content !== undefined || json.error !== undefined || json.status !== undefined) {
+      return json;
+    }
+  } catch {}
+  return { content: text, status: res.status, content_type: res.headers.get('content-type') || 'text/plain' };
+}
+
 async function executeToolCall(toolCall) {
   const { name, arguments: argsRaw } = toolCall.function;
   let args;
@@ -46,7 +57,7 @@ async function executeToolCall(toolCall) {
       var fetchUrl = proxyUrls[pi];
       try {
         var proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(args.url), { signal: abortController?.signal });
-        var data = await proxyRes.json();
+        var data = await parseProxyResponse(proxyRes);
 
         if (data.status === 429 || data.error) {
           var host;
@@ -270,7 +281,7 @@ async function executeToolCall(toolCall) {
               if (fetchUrl) {
                 try {
                   const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
-                  const d = await proxyRes.json();
+                  const d = await parseProxyResponse(proxyRes);
                   if (!d.error && d.content && d.content.length > 100) {
                     return { engine: e.name, data: d, parse: e.parse };
                   }
@@ -281,7 +292,7 @@ async function executeToolCall(toolCall) {
           })();
         }
         return fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal })
-          .then(r => r.json())
+          .then(r => parseProxyResponse(r))
           .then(d => ({ engine: e.name, data: d, parse: e.parse }));
       }));
 
@@ -501,7 +512,7 @@ async function executeToolCall(toolCall) {
       if (!proxyRes.ok) {
         return { error: 'Failed to fetch feed: HTTP ' + proxyRes.status };
       }
-      const data = await proxyRes.json();
+      const data = await parseProxyResponse(proxyRes);
       if (data.error) return { error: 'Feed fetch error: ' + data.error };
       const xml = data.content || '';
       if (!xml) return { error: 'Empty response from feed URL' };
