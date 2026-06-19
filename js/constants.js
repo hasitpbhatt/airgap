@@ -381,6 +381,7 @@ let isGenerating = false;
 let pendingDownloads = [];
 let pendingCharts = [];
 let pendingClipboard = [];
+let userScrolledAway = false;
 
 // DOM Elements Reference
 const elements = {

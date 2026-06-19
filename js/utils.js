@@ -57,11 +57,21 @@ function xorHexDecode(hex) {
 }
 
 function scrollToBottom() {
+  userScrolledAway = false;
+  elements.chatFeedContainer.scrollTop = elements.chatFeedContainer.scrollHeight;
+}
+
+function tryAutoScroll() {
+  if (userScrolledAway) return;
+  scrollToBottom();
+}
+
+function setupAutoScroll() {
   var c = elements.chatFeedContainer;
-  var threshold = 100;
-  if (c.scrollTop + c.clientHeight >= c.scrollHeight - threshold) {
-    c.scrollTop = c.scrollHeight;
-  }
+  c.addEventListener('scroll', function () {
+    var threshold = 32;
+    userScrolledAway = c.scrollTop + c.clientHeight < c.scrollHeight - threshold;
+  });
 }
 
 // Textarea autogrow logic

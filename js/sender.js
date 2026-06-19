@@ -69,7 +69,7 @@ async function triggerSendAPI() {
     </div>
   `;
   elements.chatFeed.appendChild(loadingRow);
-  scrollToBottom();
+  tryAutoScroll();
 
   abortController = new AbortController();
   const messages = activeChat.messages.map(m => ({
@@ -220,7 +220,7 @@ async function triggerCompact() {
     </div>
   `;
   elements.chatFeed.appendChild(loadingRow);
-  scrollToBottom();
+  tryAutoScroll();
 
   abortController = new AbortController();
 
@@ -266,7 +266,7 @@ async function triggerCompact() {
     noticeRow.className = 'message-row system';
     noticeRow.innerHTML = `<div class="message-bubble" style="border-color: hsl(var(--warning));"><div class="msg-content"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i> Conversation compacted. Previous messages replaced with summary.</div></div>`;
     elements.chatFeed.appendChild(noticeRow);
-    scrollToBottom();
+    tryAutoScroll();
     lucide.createIcons();
 
   } catch (err) {

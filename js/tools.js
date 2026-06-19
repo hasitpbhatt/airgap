@@ -734,7 +734,7 @@ function appendToolCallUI(toolCall) {
     elements.chatFeed.appendChild(row);
   }
 
-  scrollToBottom();
+  tryAutoScroll();
   lucide.createIcons();
 }
 
@@ -885,7 +885,7 @@ function updateToolCallUI(toolCall, result) {
     `;
   }
 
-  scrollToBottom();
+  tryAutoScroll();
   lucide.createIcons();
 }
 
