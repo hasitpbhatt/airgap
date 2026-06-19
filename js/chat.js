@@ -127,9 +127,9 @@ function renderChatList() {
       }
     });
 
-    item.querySelector('.delete-btn').addEventListener('click', (e) => {
+    item.querySelector('.delete-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (confirm(`Are you sure you want to delete "${chat.title}"?`)) {
+      if (await showConfirm(`Are you sure you want to delete "${chat.title}"?`)) {
         const index = chats.findIndex(c => c.id === chat.id);
         if (index !== -1) {
           chats.splice(index, 1);
@@ -196,11 +196,11 @@ function startEditingTitle() {
   input.addEventListener('blur', finishEditing);
 }
 
-function clearCurrentChat() {
+async function clearCurrentChat() {
   const activeChat = getActiveChat();
   if (!activeChat) return;
 
-  if (confirm("Clear all messages in this conversation? (Keep settings & system prompt)")) {
+  if (await showConfirm("Clear all messages in this conversation? (Keep settings & system prompt)")) {
     activeChat.messages = [
       { role: 'system', content: activeChat.systemPrompt }
     ];
@@ -398,11 +398,11 @@ function selectPersonaForNewChat(personaName) {
 }
 
 // Message actions
-function deleteMessage(index) {
+async function deleteMessage(index) {
   const activeChat = getActiveChat();
   if (!activeChat) return;
 
-  if (confirm("Delete this message?")) {
+  if (await showConfirm("Delete this message?")) {
     activeChat.messages.splice(index, 1);
     const userMsgCount = activeChat.messages.filter(m => m.role === 'user').length;
     activeChat.turnCount = userMsgCount;
@@ -549,10 +549,10 @@ function renderMemoryPanel() {
       }
     });
 
-    item.querySelector('.memory-item-delete').addEventListener('click', (e) => {
+    item.querySelector('.memory-item-delete').addEventListener('click', async (e) => {
       e.stopPropagation();
       const k = e.currentTarget.getAttribute('data-key');
-      if (confirm(`Delete "${k}" from global memory?`)) {
+      if (await showConfirm(`Delete "${k}" from global memory?`)) {
         globalStoreDelete(k);
         renderMemoryPanel();
       }

@@ -1447,4 +1447,43 @@ test.describe('Edge cases', () => {
     });
     expect(r.error).toContain('Invalid tool arguments');
   });
+
+  // ---------------------------------------------------------------------------
+  // Toast notifications & confirm dialogs (#4)
+  // ---------------------------------------------------------------------------
+  test.describe('Toast and confirm dialogs', () => {
+    test.beforeEach(async ({ page }) => {
+      await clearStorage(page);
+      await seedSettings(page, { apiKey: 'test-key' });
+      await page.goto(INDEX);
+      await page.waitForLoadState('networkidle');
+    });
+
+    test('showToast creates a visible toast', async ({ page }) => {
+      await page.evaluate(() => showToast('Hello from toast', 'info'));
+      const toast = page.locator('.toast');
+      await expect(toast).toBeVisible();
+      await expect(toast).toHaveText('Hello from toast');
+    });
+
+    test('showConfirm shows modal and resolves true on OK', async ({ page }) => {
+      const result = page.evaluate(() => showConfirm('Proceed?'));
+      await expect(page.locator('#confirm-overlay')).toBeVisible();
+      await expect(page.locator('#confirm-body')).toHaveText('Proceed?');
+      await page.locator('#confirm-ok').click();
+      expect(await result).toBe(true);
+    });
+
+    test('showConfirm resolves false on Cancel', async ({ page }) => {
+      const result = page.evaluate(() => showConfirm('Cancel me?'));
+      await page.locator('#confirm-cancel').click();
+      expect(await result).toBe(false);
+    });
+
+    test('showConfirm resolves false on Escape', async ({ page }) => {
+      const result = page.evaluate(() => showConfirm('Escape me?'));
+      await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+      expect(await result).toBe(false);
+    });
+  });
 });

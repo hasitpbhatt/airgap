@@ -144,6 +144,50 @@ function copyCodeSnippet(button) {
   });
 }
 
+// Toast notifications
+function showToast(msg, type) {
+  type = type || 'info';
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function () {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(function () { el.remove(); }, 300);
+  }, 3000);
+}
+
+// Promise-based confirm dialog
+function showConfirm(msg) {
+  return new Promise(function (resolve) {
+    var overlay = document.getElementById('confirm-overlay');
+    var body = document.getElementById('confirm-body');
+    var okBtn = document.getElementById('confirm-ok');
+    var cancelBtn = document.getElementById('confirm-cancel');
+    body.textContent = msg;
+    overlay.style.display = 'flex';
+
+    function done(result) {
+      overlay.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+    function onOk() { done(true); }
+    function onCancel() { done(false); }
+    function onOverlay(e) { if (e.target === overlay) done(false); }
+    function onKey(e) { if (e.key === 'Escape') done(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
 function copyMessageText(button, index) {
   const activeChat = getActiveChat();
   if (!activeChat || !activeChat.messages[index]) return;

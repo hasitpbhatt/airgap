@@ -183,10 +183,10 @@ function setupEventListeners() {
 
   // Clear all memory
   if (elements.clearMemoryBtn) {
-    elements.clearMemoryBtn.addEventListener('click', () => {
+    elements.clearMemoryBtn.addEventListener('click', async () => {
       const keys = globalStoreListKeys();
       if (keys.length === 0) return;
-      if (confirm('Delete all ' + keys.length + ' memories? This cannot be undone.')) {
+      if (await showConfirm('Delete all ' + keys.length + ' memories? This cannot be undone.')) {
         globalStoreClear();
         renderMemoryPanel();
       }

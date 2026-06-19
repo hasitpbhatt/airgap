@@ -27,7 +27,7 @@ async function triggerSend() {
   }
 
   if (settings.useMaxTurns && activeChat.turnCount >= settings.maxTurns) {
-    alert("Turn limit reached. Start a new session or increase the limit in settings.");
+    showToast("Turn limit reached. Start a new session or increase the limit in settings.", "error");
     return;
   }
 
