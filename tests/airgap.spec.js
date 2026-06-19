@@ -1570,4 +1570,52 @@ test.describe('Edge cases', () => {
       await expect(overlay).toBeHidden();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Smart auto-scroll (#5)
+  // ---------------------------------------------------------------------------
+  test.describe('Smart auto-scroll', () => {
+    test.beforeEach(async ({ page }) => {
+      await clearStorage(page);
+      await seedSettings(page, { apiKey: 'test-key' });
+      await page.goto(INDEX);
+      await page.waitForLoadState('networkidle');
+    });
+
+    test('scrollToBottom scrolls when near bottom', async ({ page }) => {
+      const scrolled = await page.evaluate(() => {
+        const c = document.getElementById('chat-feed-container');
+        c.style.height = '200px';
+        c.style.overflow = 'scroll';
+        for (let i = 0; i < 50; i++) {
+          const d = document.createElement('div');
+          d.style.height = '40px';
+          d.textContent = 'line ' + i;
+          document.getElementById('chat-feed').appendChild(d);
+        }
+        c.scrollTop = c.scrollHeight - c.clientHeight;
+        scrollToBottom();
+        return c.scrollTop + c.clientHeight >= c.scrollHeight;
+      });
+      expect(scrolled).toBe(true);
+    });
+
+    test('scrollToBottom does not scroll when user scrolled up', async ({ page }) => {
+      const scrollTopAfter = await page.evaluate(() => {
+        const c = document.getElementById('chat-feed-container');
+        c.style.height = '200px';
+        c.style.overflow = 'scroll';
+        for (let i = 0; i < 50; i++) {
+          const d = document.createElement('div');
+          d.style.height = '40px';
+          d.textContent = 'line ' + i;
+          document.getElementById('chat-feed').appendChild(d);
+        }
+        c.scrollTop = 0;
+        scrollToBottom();
+        return c.scrollTop;
+      });
+      expect(scrollTopAfter).toBe(0);
+    });
+  });
 });

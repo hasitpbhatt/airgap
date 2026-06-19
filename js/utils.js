@@ -57,7 +57,11 @@ function xorHexDecode(hex) {
 }
 
 function scrollToBottom() {
-  elements.chatFeedContainer.scrollTop = elements.chatFeedContainer.scrollHeight;
+  var c = elements.chatFeedContainer;
+  var threshold = 100;
+  if (c.scrollTop + c.clientHeight >= c.scrollHeight - threshold) {
+    c.scrollTop = c.scrollHeight;
+  }
 }
 
 // Textarea autogrow logic
