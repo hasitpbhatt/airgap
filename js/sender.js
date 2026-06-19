@@ -88,6 +88,7 @@ async function triggerSendAPI() {
 
       const body = {
         model: settings.modelName || 'mistral-small-latest',
+        stream: true,
         messages
       };
       if (AVAILABLE_TOOLS.length > 0) {
@@ -105,14 +106,63 @@ async function triggerSendAPI() {
         throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
       }
 
-      const data = await res.json();
-      const message = data.choices?.[0]?.message;
+      // SSE streaming reader
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamContent = '';
+      let toolCalls = [];
+      let finishReason = null;
 
-      if (message?.tool_calls && message.tool_calls.length > 0) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(data);
+            const choice = chunk.choices?.[0];
+            if (!choice) continue;
+            finishReason = choice.finish_reason || finishReason;
+            const delta = choice.delta || {};
+            if (delta.content) {
+              streamContent += delta.content;
+              const loadingBubble = document.getElementById('temp-loading-bubble');
+              if (loadingBubble) {
+                const msgContent = loadingBubble.querySelector('.msg-content');
+                if (msgContent) msgContent.innerHTML = mdToHtml(streamContent);
+              }
+            }
+            if (delta.tool_calls) {
+              for (const tc of delta.tool_calls) {
+                const idx = tc.index || 0;
+                if (!toolCalls[idx]) {
+                  toolCalls[idx] = { id: tc.id, type: 'function', function: { name: '', arguments: '' } };
+                }
+                if (tc.id) toolCalls[idx].id = tc.id;
+                if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
+                if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      toolCalls = toolCalls.filter(Boolean);
+
+      if (toolCalls.length > 0) {
+        const bubble = document.getElementById('temp-loading-bubble');
+        if (bubble) bubble.remove();
+
         messages.push({
           role: 'assistant',
           content: null,
-          tool_calls: message.tool_calls.map(tc => ({
+          tool_calls: toolCalls.map(tc => ({
             id: tc.id,
             type: 'function',
             function: { name: tc.function.name, arguments: tc.function.arguments }
@@ -120,7 +170,7 @@ async function triggerSendAPI() {
         });
 
         let wasCompacted = false;
-        for (const tc of message.tool_calls) {
+        for (const tc of toolCalls) {
           if (tc.function.name === 'save_file') saveFileUsed = true;
           appendToolCallUI(tc);
           const result = await executeToolCall(tc);
@@ -151,15 +201,17 @@ async function triggerSendAPI() {
         continue;
       }
 
-      const bubble = document.getElementById('temp-loading-bubble');
-      if (bubble) bubble.remove();
-
-      let content = message?.content || '';
-      if (content) {
-        if (saveFileUsed) {
-          content = content.replace(/\[([^\]]*)\]\(https?:\/\/[^\)]+\)/g, '$1');
+      if (streamContent) {
+        const bubble = document.getElementById('temp-loading-bubble');
+        if (bubble) {
+          bubble.removeAttribute('id');
+          highlightCodeBlocks();
         }
-        activeChat.messages.push({ role: 'assistant', content });
+
+        if (saveFileUsed) {
+          streamContent = streamContent.replace(/\[([^\]]*)\]\(https?:\/\/[^\)]+\)/g, '$1');
+        }
+        activeChat.messages.push({ role: 'assistant', content: streamContent });
         activeChat.turnCount++;
         saveChats();
       } else {

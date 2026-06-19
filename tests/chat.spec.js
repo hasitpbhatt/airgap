@@ -55,6 +55,10 @@ test.describe('Sender API', () => {
     await seedSettings(page, { apiKey: 'sk-test' });
   });
 
+  function sseChunks(chunks) {
+    return chunks.map(function (c) { return 'data: ' + JSON.stringify(c); }).concat(['data: [DONE]']).join('\n');
+  }
+
   test('triggerSend adds user message and calls API', async ({ page }) => {
     const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
     await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
@@ -65,10 +69,10 @@ test.describe('Sender API', () => {
     });
     await page.route(apiUrl, async (route) => {
       await route.fulfill({
-        contentType: 'application/json',
-        body: JSON.stringify({
-          choices: [{ message: { role: 'assistant', content: 'Hello from mock API!' } }]
-        }),
+        contentType: 'text/event-stream',
+        body: sseChunks([
+          { id: '1', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'Hello from mock API!' }, finish_reason: 'stop' }] }
+        ]),
       });
     });
     await page.addInitScript(() => {
@@ -109,27 +113,32 @@ test.describe('Sender API', () => {
       callCount++;
       if (callCount === 1) {
         await route.fulfill({
-          contentType: 'application/json',
-          body: JSON.stringify({
-            choices: [{
-              message: {
-                role: 'assistant',
-                content: null,
-                tool_calls: [{
-                  id: 'call_1',
-                  type: 'function',
-                  function: { name: 'store_value', arguments: '{"key":"favorite_color","value":"blue"}' }
-                }]
-              }
-            }]
-          }),
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            {
+              id: '1', object: 'chat.completion.chunk', choices: [{
+                index: 0,
+                delta: {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [{
+                    index: 0,
+                    id: 'call_1',
+                    type: 'function',
+                    function: { name: 'store_value', arguments: '{"key":"favorite_color","value":"blue"}' }
+                  }]
+                },
+                finish_reason: 'tool_calls'
+              }]
+            }
+          ]),
         });
       } else {
         await route.fulfill({
-          contentType: 'application/json',
-          body: JSON.stringify({
-            choices: [{ message: { role: 'assistant', content: 'Stored your favorite color.' } }]
-          }),
+          contentType: 'text/event-stream',
+          body: sseChunks([
+            { id: '2', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'Stored your favorite color.' }, finish_reason: 'stop' }] }
+          ]),
         });
       }
     });
@@ -247,20 +256,25 @@ test.describe('Sender API', () => {
     await page.route(apiUrl, async (route) => {
       callCount++;
       await route.fulfill({
-        contentType: 'application/json',
-        body: JSON.stringify({
-          choices: [{
-            message: {
-              role: 'assistant',
-              content: null,
-              tool_calls: [{
-                id: 'call_' + callCount,
-                type: 'function',
-                function: { name: 'get_current_time', arguments: '{}' }
-              }]
-            }
-          }]
-        }),
+        contentType: 'text/event-stream',
+        body: sseChunks([
+          {
+            id: '1', object: 'chat.completion.chunk', choices: [{
+              index: 0,
+              delta: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [{
+                  index: 0,
+                  id: 'call_' + callCount,
+                  type: 'function',
+                  function: { name: 'get_current_time', arguments: '{}' }
+                }]
+              },
+              finish_reason: 'tool_calls'
+            }]
+          }
+        ]),
       });
     });
     await page.goto(INDEX);
