@@ -1321,7 +1321,7 @@ body {
   padding: 1rem;
 }
 .connect-card {
-  max-width: 400px;
+  max-width: 480px;
   width: 100%;
   text-align: center;
 }
@@ -1385,6 +1385,60 @@ body {
   white-space: nowrap;
 }
 .connect-btn:hover { opacity: 0.85; }
+.connect-headline {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: hsl(var(--text-primary));
+  margin: 0 0 1.25rem;
+  line-height: 1.4;
+}
+.connect-why-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+.connect-why-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--bg-secondary));
+  border: 1px solid hsl(var(--border-color));
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.connect-why-card:hover {
+  border-color: hsl(var(--accent) / 0.4);
+  box-shadow: 0 0 0 1px hsl(var(--accent) / 0.15);
+}
+.connect-why-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--accent) / 0.12);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.connect-why-content {
+  min-width: 0;
+}
+.connect-why-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: hsl(var(--text-primary));
+  margin-bottom: 0.15rem;
+  letter-spacing: 0.01em;
+}
+.connect-why-text {
+  font-size: 0.7rem;
+  color: hsl(var(--text-secondary));
+  line-height: 1.45;
+}
 .connect-note {
   margin-top: 1rem;
   font-size: 0.7rem;

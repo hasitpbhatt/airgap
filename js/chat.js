@@ -375,7 +375,7 @@ function renderWelcomeScreen() {
         <i data-lucide="cpu"></i>
       </div>
       <h2 class="welcome-title">OpenCode LLM Chat</h2>
-      <p class="welcome-subtitle">A gorgeous, developer-centric interface for talking to LLMs. Select a teaching persona or customize configuration in the sidebar settings to get started.</p>
+      <p class="welcome-subtitle">Your conversations stay on your machine. Bring your own API key, choose a teaching persona below, and start — zero servers, zero signup, zero data leakage.</p>
 
       <h3 class="welcome-section-title">Select a Conversation Persona</h3>
       <div class="personas-grid">
