@@ -159,7 +159,7 @@ async function executeToolCall(toolCall) {
   if (name === 'search_web') {
     try {
       const query = encodeURIComponent(args.query);
-      const fetchUrl = settings.fetchUrl || 'https://airgap-fetch.gitub.workers.dev/';
+      const fetchUrl = settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/' ? settings.fetchUrl : 'https://airgap-fetch.gitub.workers.dev/';
 
       const searxngInstances = [
         'https://searx.be',
@@ -258,6 +258,15 @@ async function executeToolCall(toolCall) {
         if (e.instances) {
           return (async () => {
             for (const url of e.instances) {
+              try {
+                const directRes = await fetch(url, { signal: abortController?.signal });
+                if (directRes.ok) {
+                  const json = await directRes.json();
+                  if (json.results && Array.isArray(json.results) && json.results.length > 0) {
+                    return { engine: e.name, data: { content: JSON.stringify(json) }, parse: e.parse };
+                  }
+                }
+              } catch {}
               if (fetchUrl) {
                 try {
                   const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
