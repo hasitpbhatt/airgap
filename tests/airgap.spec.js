@@ -1056,7 +1056,7 @@ test.describe('Sender API', () => {
       return {
         msgs: active?.messages?.map(m => ({ role: m.role, content: m.content })),
         storedValue: stored,
-        storedKey: Object.keys(llmStoreListAll() || {}).find(k => k === 'favorite_color'),
+        storedKeys: llmStoreListKeys(),
       };
     });
     expect(r.storedValue).toBe('blue');
@@ -1186,7 +1186,6 @@ test.describe('Sender API', () => {
       const active = getActiveChat();
       return {
         errorMsg: active?.messages?.find(m => m.isError)?.content || '',
-        callCount,
       };
     });
     expect(r.errorMsg).toContain('exceeded maximum');
@@ -1267,10 +1266,10 @@ test.describe('UI Rendering', () => {
       updateToolCallUI({ id: 'tc_update', function: { name: 'calculate' } }, { result: 4 });
       const el = document.getElementById('tool-call-tc_update');
       return {
-        statusHtml: el?.querySelector('.tool-call-status')?.innerHTML || '',
+        bubbleHtml: el?.querySelector('.tool-call-bubble')?.outerHTML || '',
       };
     });
-    expect(r.statusHtml).toContain('check');
+    expect(r.bubbleHtml).toContain('check-circle');
   });
 
   test('updateToolCallUI shows error on failure', async ({ page }) => {
@@ -1282,10 +1281,10 @@ test.describe('UI Rendering', () => {
       updateToolCallUI({ id: 'tc_err', function: { name: 'calculate' } }, { error: 'Invalid expression' });
       const el = document.getElementById('tool-call-tc_err');
       return {
-        statusHtml: el?.querySelector('.tool-call-status')?.innerHTML || '',
+        bubbleHtml: el?.querySelector('.tool-call-bubble')?.outerHTML || '',
       };
     });
-    expect(r.statusHtml).toContain('x');
+    expect(r.bubbleHtml).toContain('alert-circle');
   });
 
   test('pending items arrays track output tool calls', async ({ page }) => {
