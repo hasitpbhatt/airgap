@@ -56,6 +56,11 @@ function xorHexDecode(hex) {
   return dec;
 }
 
+function estimateTokens(str) {
+  if (!str) return 0;
+  return Math.ceil(str.length / 4);
+}
+
 function scrollToBottom() {
   userScrolledAway = false;
   elements.chatFeedContainer.scrollTop = elements.chatFeedContainer.scrollHeight;

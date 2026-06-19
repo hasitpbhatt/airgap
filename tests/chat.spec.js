@@ -565,3 +565,119 @@ test.describe('UI Rendering', () => {
     expect(r.secondRole).toContain('assistant');
   });
 });
+
+test.describe('Token counter display', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockCdn(page);
+    await seedSettings(page, { apiKey: 'sk-test' });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+  });
+
+  test('shows per-message token count for user message', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const chat = getActiveChat();
+      if (chat) {
+        chat.messages = [
+          { role: 'system', content: 'You are helpful.' },
+          { role: 'user', content: 'Hello!' },
+        ];
+      }
+      renderChatFeed();
+      const msgTokens = document.querySelectorAll('.msg-tokens');
+      return {
+        count: msgTokens.length,
+        text: msgTokens[0]?.textContent || '',
+      };
+    });
+    expect(r.count).toBe(1);
+    expect(r.text).toContain('tok');
+  });
+
+  test('shows per-message token count for assistant message', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const chat = getActiveChat();
+      if (chat) {
+        chat.messages = [
+          { role: 'system', content: 'You are helpful.' },
+          { role: 'user', content: 'Hello!' },
+          { role: 'assistant', content: 'This is a longer response with more tokens.' },
+        ];
+      }
+      renderChatFeed();
+      const msgTokens = document.querySelectorAll('.msg-tokens');
+      return {
+        count: msgTokens.length,
+        firstTokenText: msgTokens[0]?.textContent || '',
+        secondTokenText: msgTokens[1]?.textContent || '',
+      };
+    });
+    expect(r.count).toBe(2);
+    expect(r.firstTokenText).toContain('tok');
+    expect(r.secondTokenText).toContain('tok');
+  });
+
+  test('shows context indicator in input-info', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const chat = getActiveChat();
+      if (chat) {
+        chat.messages = [
+          { role: 'system', content: 'You are helpful.' },
+          { role: 'user', content: 'Hello world!' },
+        ];
+      }
+      updateInputUIState();
+      const ctxText = document.querySelector('.context-text')?.textContent || '';
+      const ctxBar = document.querySelector('.context-bar-fill');
+      return {
+        text: ctxText,
+        hasBar: !!ctxBar,
+        barStyle: ctxBar ? ctxBar.getAttribute('style') : '',
+      };
+    });
+    expect(r.text).toContain('tok');
+    expect(r.text).toContain('/');
+    expect(r.hasBar).toBe(true);
+    expect(r.barStyle).toContain('width');
+  });
+
+  test('context indicator updates after sending a message', async ({ page }) => {
+    const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+    await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
+    await seedChat(page, {
+      messages: [
+        { role: 'system', content: 'You are helpful.' },
+      ],
+    });
+    await page.route(apiUrl, async (route) => {
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: [
+          'data: ' + JSON.stringify({ id: '1', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'Mock reply' }, finish_reason: 'stop' }] }),
+          'data: [DONE]',
+        ].join('\n'),
+      });
+    });
+    await page.addInitScript(() => {
+      window.renderMathInElement = () => {};
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+    await page.waitForSelector('#chat-textarea');
+
+    await page.fill('#chat-textarea', 'Test message for tokens');
+    await page.click('#send-btn');
+    await page.waitForTimeout(500);
+
+    const r = await page.evaluate(() => {
+      const ctxText = document.querySelector('.context-text')?.textContent || '';
+      const msgTokens = document.querySelectorAll('.msg-tokens');
+      return {
+        contextText: ctxText,
+        msgTokenCount: msgTokens.length,
+      };
+    });
+    expect(r.contextText).toContain('tok');
+    expect(r.msgTokenCount).toBe(2);
+  });
+});

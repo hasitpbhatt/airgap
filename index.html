@@ -7,6 +7,10 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7c3aed">
+  <meta property="og:title" content="airgap — personal AI agent">
+  <meta property="og:description" content="An autonomous AI agent that runs entirely in your browser. Browse the web, search, read RSS, remember facts — all through a single HTML file and an API key.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
   
   <!-- Modern Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +45,32 @@
       <div class="connect-card">
         <div class="connect-icon"><i data-lucide="terminal"></i></div>
         <h1 class="connect-title">airgap</h1>
-        <p class="connect-desc">A personal AI agent that lives in your browser.<br>No server. No install. No signup.</p>
+        <p class="connect-headline">Your conversations are yours. <span style="white-space:nowrap">Full stop.</span></p>
+
+        <div class="connect-why-grid">
+          <div class="connect-why-card">
+            <div class="connect-why-icon">🛡️</div>
+            <div class="connect-why-content">
+              <div class="connect-why-title">Local by design</div>
+              <div class="connect-why-text">Messages, keys, and context stay in your browser — never uploaded to a third-party server.</div>
+            </div>
+          </div>
+          <div class="connect-why-card">
+            <div class="connect-why-icon">🔌</div>
+            <div class="connect-why-content">
+              <div class="connect-why-title">Bring your own key</div>
+              <div class="connect-why-text">Works with Mistral, OpenAI, or any OpenAI-compatible API. You control where queries go.</div>
+            </div>
+          </div>
+          <div class="connect-why-card">
+            <div class="connect-why-icon">📁</div>
+            <div class="connect-why-content">
+              <div class="connect-why-title">One HTML file</div>
+              <div class="connect-why-text">Zero servers. Zero databases. Zero signup. Open it, configure, and go.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="connect-field-group">
           <label class="connect-field-label" for="connect-url-input">API URL</label>
           <input type="text" id="connect-url-input" class="setting-input" placeholder="https://api.mistral.ai/v1/chat/completions" autocomplete="off" spellcheck="false">
