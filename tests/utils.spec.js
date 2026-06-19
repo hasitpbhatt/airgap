@@ -37,6 +37,40 @@ test.describe('Utility functions', () => {
     expect(result.parsed.u).toBe('https://api.mistral.ai/v1/chat/completions');
   });
 
+  test('estimateTokens returns 0 for null/undefined/empty string', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      return {
+        fromNull: estimateTokens(null),
+        fromUndefined: estimateTokens(undefined),
+        fromEmpty: estimateTokens(''),
+      };
+    });
+    expect(r.fromNull).toBe(0);
+    expect(r.fromUndefined).toBe(0);
+    expect(r.fromEmpty).toBe(0);
+  });
+
+  test('estimateTokens computes roughly 1 token per 4 characters', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      return {
+        fourChars: estimateTokens('abcd'),
+        eightChars: estimateTokens('abcdefgh'),
+        twelveChars: estimateTokens('abcdefghijkl'),
+      };
+    });
+    expect(r.fourChars).toBe(1);
+    expect(r.eightChars).toBe(2);
+    expect(r.twelveChars).toBe(3);
+  });
+
+  test('estimateTokens handles long content', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const text = 'A'.repeat(4000);
+      return estimateTokens(text);
+    });
+    expect(r).toBe(1000);
+  });
+
   test('xorHexDecode handles legacy (non-JSON) key format', async ({ page }) => {
     const result = await page.evaluate(() => {
       const original = 'sk-legacy-key';

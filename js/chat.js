@@ -307,6 +307,7 @@ function renderChatFeed() {
           ${htmlContent}
         </div>
         <div class="msg-actions">
+          <span class="msg-tokens">${estimateTokens(msg.content).toLocaleString()} tok</span>
           <button class="msg-action-btn" title="Copy to Clipboard" onclick="copyMessageText(this, ${idx})">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
           </button>
@@ -492,14 +493,40 @@ function updateInputUIState() {
     ? "Turn limit reached. Please start a new conversation."
     : "Type your message here... (Enter to send, Shift+Enter for newline)";
 
+  let parts = [];
   if (settings.useMaxTurns) {
-    elements.inputInfo.style.display = 'block';
-    elements.inputInfo.innerHTML = `<span style="font-weight:600;">Exchanges:</span> ${activeChat.turnCount} of ${settings.maxTurns}`;
-  } else {
-    elements.inputInfo.style.display = 'none';
+    parts.push(`<span style="font-weight:600;">Exchanges:</span> ${activeChat.turnCount} of ${settings.maxTurns}`);
   }
 
+  // Context token indicator
+  const totalTokens = calculateTotalTokens(activeChat);
+  const limit = getContextLimit();
+  const pct = Math.min(100, (totalTokens / limit) * 100);
+  const color = pct >= 95 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--text-muted)';
+  parts.push(`<span class="context-indicator">
+    <span class="context-text" style="color: ${color}">${totalTokens.toLocaleString()} / ${limit.toLocaleString()} tok</span>
+    <span class="context-bar"><span class="context-bar-fill" style="width:${Math.round(pct)}%;background:${color}"></span></span>
+  </span>`);
+
+  elements.inputInfo.style.display = parts.length ? 'block' : 'none';
+  elements.inputInfo.innerHTML = parts.join(' · ');
+
   handleTextareaAutoGrow();
+}
+
+function calculateTotalTokens(chat) {
+  if (!chat || !chat.messages) return 0;
+  let total = 0;
+  for (const msg of chat.messages) {
+    if (msg.content) {
+      total += estimateTokens(msg.content);
+    }
+  }
+  return total;
+}
+
+function getContextLimit() {
+  return CONTEXT_LIMITS[settings.modelName] || 32768;
 }
 
 function refreshMemoryPanelIfOpen() {

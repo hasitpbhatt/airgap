@@ -19,6 +19,7 @@
   
   --danger: 0 84% 60%;            /* Rose red (#f43f5e) */
   --success: 142 71% 45%;         /* Emerald (#10b981) */
+  --warning: 35 91% 56%;          /* Amber (#f59e0b) */
   
   --user-msg-bg: rgba(99, 102, 241, 0.12);
   --user-msg-border: rgba(99, 102, 241, 0.25);
@@ -902,6 +903,36 @@ body {
 }
 .message-row:hover .msg-actions {
   opacity: 1;
+}
+
+.msg-tokens {
+  font-size: 0.65rem;
+  color: hsl(var(--text-muted));
+  opacity: 0.6;
+  margin-right: auto;
+}
+
+.context-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.context-bar {
+  display: inline-block;
+  width: 40px;
+  height: 3px;
+  background: hsl(var(--border-color));
+  border-radius: 2px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.context-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
 }
 
 .msg-action-btn {

@@ -358,6 +358,14 @@ const AVAILABLE_TOOLS = [
   }
 ];
 
+const CONTEXT_LIMITS = {
+  'mistral-small-latest': 32768,
+  'mistral-medium-latest': 32768,
+  'mistral-large-latest': 32768,
+  'codestral-latest': 32768,
+  'ministral-14b-2512': 32768,
+};
+
 const MAX_TOOL_LOOP = 10;
 const AUTO_COMPACT_THRESHOLD = 15;
 
