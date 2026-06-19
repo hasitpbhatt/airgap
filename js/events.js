@@ -345,8 +345,39 @@ function setupEventListeners() {
   });
 
   // Chat Input logic
-  elements.chatTextarea.addEventListener('input', handleTextareaAutoGrow);
-  elements.chatTextarea.addEventListener('keydown', (e) => {
+  elements.chatTextarea.addEventListener('input', function () {
+    handleTextareaAutoGrow();
+    handleSlashInput();
+  });
+  elements.chatTextarea.addEventListener('keydown', function (e) {
+    if (slashMenuVisible) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = document.querySelectorAll('.slash-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown') slashHighlightIndex = (slashHighlightIndex + 1) % items.length;
+        else slashHighlightIndex = (slashHighlightIndex - 1 + items.length) % items.length;
+        items.forEach((el, i) => el.classList.toggle('highlighted', i === slashHighlightIndex));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const items = document.querySelectorAll('.slash-item');
+        const highlighted = items[slashHighlightIndex];
+        if (highlighted) {
+          const command = highlighted.dataset.command;
+          hideSlashMenu();
+          elements.chatTextarea.value = '/' + command;
+          triggerSend();
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        hideSlashMenu();
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       triggerSend();
@@ -404,6 +435,26 @@ function setupEventListeners() {
   }
 
   document.addEventListener('click', (e) => {
+    // Slash menu item click
+    const slashItem = e.target.closest('.slash-item');
+    if (slashItem) {
+      const command = slashItem.dataset.command;
+      if (command) {
+        hideSlashMenu();
+        elements.chatTextarea.value = '/' + command;
+        triggerSend();
+      }
+      return;
+    }
+
+    // Dismiss slash menu on outside click (don't return - let other handlers run)
+    if (slashMenuVisible) {
+      const menu = elements.slashMenu;
+      const textarea = elements.chatTextarea;
+      if (!menu.contains(e.target) && e.target !== textarea && !textarea.contains(e.target)) {
+        hideSlashMenu();
+      }
+    }
     const clipBtn = e.target.closest('.btn-clipboard-copy');
     if (clipBtn) {
       const clipId = clipBtn.dataset.clipId;
@@ -469,6 +520,55 @@ function setupEventListeners() {
   });
 
   window.addEventListener('resize', adjustResponsiveLayout);
+}
+
+// Slash command menu state
+const slashCommands = [
+  { command: 'compact', icon: 'file-text', label: '/compact', desc: 'Compress conversation history' },
+  { command: 'clear', icon: 'trash-2', label: '/clear', desc: 'Clear current conversation' }
+];
+let slashMenuVisible = false;
+let slashHighlightIndex = 0;
+
+function handleSlashInput() {
+  const text = elements.chatTextarea.value;
+  if (text === '/') {
+    showSlashMenu('');
+  } else if (text.startsWith('/') && !text.includes(' ')) {
+    showSlashMenu(text.slice(1));
+  } else {
+    hideSlashMenu();
+  }
+}
+
+function showSlashMenu(filter) {
+  if (isGenerating) return;
+  slashMenuVisible = true;
+  slashHighlightIndex = 0;
+  renderSlashMenu(filter);
+  elements.slashMenu.style.display = 'block';
+}
+
+function hideSlashMenu() {
+  slashMenuVisible = false;
+  elements.slashMenu.style.display = 'none';
+}
+
+function renderSlashMenu(filter) {
+  const lower = filter.toLowerCase();
+  const filtered = slashCommands.filter(c => c.command.startsWith(lower));
+  if (!filtered.length) {
+    hideSlashMenu();
+    return;
+  }
+  elements.slashMenu.innerHTML = filtered.map((c, i) =>
+    `<div class="slash-item${i === 0 ? ' highlighted' : ''}" data-command="${c.command}">
+      <div class="slash-item-icon"><i data-lucide="${c.icon}" style="width:14px;height:14px;"></i></div>
+      <span class="slash-item-label">${c.label}</span>
+      <span class="slash-item-desc">${c.desc}</span>
+    </div>`
+  ).join('');
+  lucide.createIcons();
 }
 
 function toggleShareLink() {

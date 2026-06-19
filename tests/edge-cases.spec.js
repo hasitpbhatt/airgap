@@ -232,3 +232,106 @@ test.describe('Smart auto-scroll', () => {
     expect(scrollTopAfter).toBe(true);
   });
 });
+
+test.describe('Slash command menu', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearStorage(page);
+    await seedSettings(page, { apiKey: 'test-key' });
+    await page.goto(INDEX);
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('typing / shows the slash menu', async ({ page }) => {
+    const menu = page.locator('#slash-menu');
+    await expect(menu).toBeHidden();
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('.slash-item')).toHaveCount(2);
+  });
+
+  test('typing /cl filters to one command', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/cl';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const menu = page.locator('#slash-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('.slash-item')).toHaveCount(1);
+    await expect(menu.locator('.slash-item').first()).toHaveAttribute('data-command', 'clear');
+  });
+
+  test('deleting / hides the menu', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeVisible();
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeHidden();
+  });
+
+  test('Escape dismisses the menu', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#slash-menu')).toBeHidden();
+  });
+
+  test('arrow keys navigate items and first is highlighted', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const items = page.locator('#slash-menu .slash-item');
+    await expect(items.nth(0)).toHaveClass(/highlighted/);
+    await page.keyboard.press('ArrowDown');
+    await expect(items.nth(1)).toHaveClass(/highlighted/);
+    await expect(items.nth(0)).not.toHaveClass(/highlighted/);
+    await page.keyboard.press('ArrowUp');
+    await expect(items.nth(0)).toHaveClass(/highlighted/);
+  });
+
+  test('clicking outside dismisses the menu', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeVisible();
+    await page.locator('#active-chat-title').click();
+    await expect(page.locator('#slash-menu')).toBeHidden();
+  });
+
+  test('clicking a command item executes it', async ({ page }) => {
+    await page.route('**/api.mistral.ai/**', async (route) => {
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: 'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+      });
+    });
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeVisible();
+    await page.locator('#slash-menu .slash-item[data-command="clear"]').click();
+    await expect(page.locator('#slash-menu')).toBeHidden();
+    await expect(page.locator('#chat-textarea')).toHaveValue('');
+  });
+});
