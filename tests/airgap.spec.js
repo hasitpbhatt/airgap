@@ -1528,4 +1528,46 @@ test.describe('Edge cases', () => {
       expect(download.suggestedFilename()).toMatch(/\.txt$/);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Keyboard shortcuts (#6)
+  // ---------------------------------------------------------------------------
+  test.describe('Keyboard shortcuts', () => {
+    test.beforeEach(async ({ page }) => {
+      await clearStorage(page);
+      await seedSettings(page, { apiKey: 'test-key' });
+      await page.goto(INDEX);
+      await page.waitForLoadState('networkidle');
+    });
+
+    test('pressing ? opens the shortcuts modal', async ({ page }) => {
+      const overlay = page.locator('#shortcuts-overlay');
+      await expect(overlay).toBeHidden();
+      await page.evaluate(() => window.openShortcuts());
+      await expect(overlay).toBeVisible();
+    });
+
+    test('pressing Escape closes the shortcuts modal', async ({ page }) => {
+      const overlay = page.locator('#shortcuts-overlay');
+      await page.evaluate(() => window.openShortcuts());
+      await expect(overlay).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(overlay).toBeHidden();
+    });
+
+    test('clicking close button hides the modal', async ({ page }) => {
+      const overlay = page.locator('#shortcuts-overlay');
+      await page.evaluate(() => window.openShortcuts());
+      await expect(overlay).toBeVisible();
+      await page.locator('#shortcuts-close-btn').click();
+      await expect(overlay).toBeHidden();
+    });
+
+    test('? does not trigger when textarea is focused', async ({ page }) => {
+      const overlay = page.locator('#shortcuts-overlay');
+      await page.locator('#chat-textarea').focus();
+      await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true })));
+      await expect(overlay).toBeHidden();
+    });
+  });
 });

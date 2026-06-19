@@ -435,6 +435,38 @@ function setupEventListeners() {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   });
 
+  // Keyboard Shortcuts Modal
+  const shortcutsOverlay = document.getElementById('shortcuts-overlay');
+  const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
+
+  function openShortcuts() { shortcutsOverlay.style.display = 'flex'; }
+  function closeShortcuts() { shortcutsOverlay.style.display = 'none'; }
+  window.openShortcuts = openShortcuts;
+  window.closeShortcuts = closeShortcuts;
+
+  shortcutsCloseBtn.addEventListener('click', closeShortcuts);
+  shortcutsOverlay.addEventListener('click', (e) => {
+    if (e.target === shortcutsOverlay) closeShortcuts();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement !== elements.chatTextarea) {
+      e.preventDefault();
+      shortcutsOverlay.style.display === 'flex' ? closeShortcuts() : openShortcuts();
+    }
+    if (e.key === 'Escape' && shortcutsOverlay.style.display === 'flex') {
+      closeShortcuts();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      createNewChat();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      toggleSidebar();
+    }
+  });
+
   window.addEventListener('resize', adjustResponsiveLayout);
 }
 
