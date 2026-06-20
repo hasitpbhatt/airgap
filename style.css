@@ -671,6 +671,26 @@ body {
   .personas-grid {
     grid-template-columns: 1fr;
   }
+
+  .header-btn span { display: none; }
+  .header-btn { padding: 0.4rem; }
+
+  .message-bubble { max-width: 92%; }
+
+  .connect-overlay {
+    overflow-y: auto;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .chat-feed-container { padding: 1rem 0.75rem; }
+  .chat-input-container { padding: 0 0.75rem 0.75rem; }
+
+  .welcome-title { font-size: 1.75rem; }
+  .welcome-subtitle { font-size: 0.95rem; }
+
+  .toast-container { right: auto; left: 0; width: 100%; padding: 0 0.5rem; }
+  .toast { max-width: 100%; }
 }
 
 .persona-card {
@@ -1462,6 +1482,7 @@ body {
   .sidebar-overlay.active {
     display: block;
   }
+  #close-sidebar-btn { display: flex !important; }
 }
 
 /* Export dropdown */
@@ -2287,4 +2308,10 @@ mark.search-highlight-current {
   .about-features {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 480px) {
+  .btn-mic, .btn-attach { width: 28px; height: 28px; }
+  .btn-send { width: 28px; height: 28px; }
+  .btn-stop { padding: 0.25rem 0.45rem; font-size: 0.65rem; }
 }
