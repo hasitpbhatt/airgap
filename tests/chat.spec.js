@@ -635,7 +635,6 @@ test.describe('Token counter display', () => {
         barStyle: ctxBar ? ctxBar.getAttribute('style') : '',
       };
     });
-    expect(r.text).toContain('tok');
     expect(r.text).toContain('/');
     expect(r.hasBar).toBe(true);
     expect(r.barStyle).toContain('width');
@@ -677,7 +676,7 @@ test.describe('Token counter display', () => {
         msgTokenCount: msgTokens.length,
       };
     });
-    expect(r.contextText).toContain('tok');
+    expect(r.contextText).toContain('/');
     expect(r.msgTokenCount).toBe(2);
   });
 });

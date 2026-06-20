@@ -58,7 +58,7 @@ test.describe('Utility functions', () => {
         twelveChars: estimateTokens('abcdefghijkl'),
       };
     });
-    expect(r.fourChars).toBe(1);
+    expect(r.fourChars).toBe(2);
     expect(r.eightChars).toBe(2);
     expect(r.twelveChars).toBe(3);
   });

@@ -555,7 +555,7 @@ function renderChatFeed() {
           ${htmlContent}
         </div>
         <div class="msg-actions">
-          <span class="msg-tokens">${estimateTokens(msg.content).toLocaleString()} tok</span>
+          <span class="msg-tokens">~${estimateTokens(msg.content).toLocaleString()} tok ${isUser ? 'in' : 'out'}</span>
           <button class="msg-action-btn" title="Copy to Clipboard" onclick="copyMessageText(this, ${idx})">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
           </button>
@@ -773,15 +773,35 @@ function updateInputUIState() {
     parts.push(`<span style="font-weight:600;">Exchanges:</span> ${activeChat.turnCount} of ${settings.maxTurns}`);
   }
 
-  // Context token indicator
-  const totalTokens = calculateTotalTokens(activeChat);
+  // Context token indicator (scaled: 50% of limit = full bar for visibility)
+  const { in: inTok, out: outTok } = calculateTotalTokens(activeChat);
+  const total = inTok + outTok;
   const limit = getContextLimit();
-  const pct = Math.min(100, (totalTokens / limit) * 100);
-  const color = pct >= 95 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--text-muted)';
-  parts.push(`<span class="context-indicator">
-    <span class="context-text" style="color: ${color}">${totalTokens.toLocaleString()} / ${limit.toLocaleString()} tok</span>
-    <span class="context-bar"><span class="context-bar-fill" style="width:${Math.round(pct)}%;background:${color}"></span></span>
-  </span>`);
+  const rawPct = (total / limit) * 200;
+  const pct = Math.min(100, Math.max(0.5, rawPct));
+  const color = total >= limit * 0.9 ? 'var(--danger)' : total >= limit * 0.7 ? 'var(--warning)' : 'var(--text-muted)';
+  if (total > 0) {
+    parts.push(`<span class="context-indicator">
+      <span class="context-text" style="color:${color}">∑ ${total.toLocaleString()} / ${limit.toLocaleString()}</span>
+      <span class="context-bar"><span class="context-bar-fill" style="width:${Math.round(pct)}%;background:${color}"></span></span>
+    </span>`);
+    parts.push(`<span style="opacity:0.7">↑ ${inTok.toLocaleString()} · ↓ ${outTok.toLocaleString()}</span>`);
+  }
+
+  // Cost estimate
+  const pricing = MODEL_PRICING[settings.modelName];
+  if (pricing && total > 0) {
+    const cost = (inTok / 1000) * pricing.input + (outTok / 1000) * pricing.output;
+    if (cost >= 0.001) {
+      parts.push(`<span style="opacity:0.5">~$${cost.toFixed(3)}</span>`);
+    } else {
+      parts.push(`<span style="opacity:0.5">< $0.001</span>`);
+    }
+  }
+
+  if (total === 0) {
+    parts.push(`<span class="context-text" style="color:var(--text-muted)">0 / ${limit.toLocaleString()}</span>`);
+  }
 
   elements.inputInfo.style.display = parts.length ? 'block' : 'none';
   elements.inputInfo.innerHTML = parts.join(' · ');
@@ -790,14 +810,19 @@ function updateInputUIState() {
 }
 
 function calculateTotalTokens(chat) {
-  if (!chat || !chat.messages) return 0;
-  let total = 0;
+  if (!chat || !chat.messages) return { in: 0, out: 0 };
+  let inTokens = 0;
+  let outTokens = 0;
   for (const msg of chat.messages) {
-    if (msg.content) {
-      total += estimateTokens(msg.content);
+    if (!msg.content) continue;
+    const t = estimateTokens(msg.content);
+    if (msg.role === 'assistant') {
+      outTokens += t;
+    } else {
+      inTokens += t;
     }
   }
-  return total;
+  return { in: inTokens, out: outTokens };
 }
 
 function getContextLimit() {

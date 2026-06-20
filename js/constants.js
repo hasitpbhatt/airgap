@@ -366,6 +366,14 @@ const CONTEXT_LIMITS = {
   'ministral-14b-2512': 32768,
 };
 
+const MODEL_PRICING = {
+  'mistral-small-latest':   { input: 0.001,  output: 0.003 },
+  'mistral-medium-latest':  { input: 0.002,  output: 0.006 },
+  'mistral-large-latest':   { input: 0.003,  output: 0.009 },
+  'codestral-latest':       { input: 0.001,  output: 0.003 },
+  'ministral-14b-2512':     { input: 0.0002, output: 0.0006 },
+};
+
 const MAX_TOOL_LOOP = 10;
 const AUTO_COMPACT_THRESHOLD = 15;
 

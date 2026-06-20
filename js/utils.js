@@ -58,7 +58,13 @@ function xorHexDecode(hex) {
 
 function estimateTokens(str) {
   if (!str) return 0;
-  return Math.ceil(str.length / 4);
+  const words = str.split(/\s+/).filter(Boolean).length;
+  const avgWordLen = str.length / Math.max(1, words);
+  if (avgWordLen > 8) {
+    return Math.ceil(str.length / 4);
+  }
+  const specialChars = (str.match(/[^\w\s]/g) || []).length;
+  return Math.max(1, Math.ceil(words * 1.3 + specialChars * 0.25));
 }
 
 function scrollToBottom() {
