@@ -609,6 +609,24 @@ function setupEventListeners() {
     if (e.target === shortcutsOverlay) closeShortcuts();
   });
 
+  // ── About Modal ─────────────────────────────────────────────────────
+  const aboutOverlay = document.getElementById('about-overlay');
+  const aboutCloseBtn = document.getElementById('about-close-btn');
+  const aboutTrigger = document.getElementById('about-trigger');
+
+  function openAbout() { aboutOverlay.style.display = 'flex'; }
+  function closeAbout() { aboutOverlay.style.display = 'none'; }
+  window.openAbout = openAbout;
+  window.closeAbout = closeAbout;
+
+  aboutTrigger.addEventListener('click', openAbout);
+  aboutCloseBtn.addEventListener('click', closeAbout);
+  aboutOverlay.addEventListener('click', (e) => {
+    if (e.target === aboutOverlay) closeAbout();
+  });
+
+  // ── Keyboard Shortcuts Modal (continued) ────────────────────────────
+
   document.addEventListener('keydown', (e) => {
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement !== elements.chatTextarea) {
       e.preventDefault();
@@ -616,6 +634,9 @@ function setupEventListeners() {
     }
     if (e.key === 'Escape' && shortcutsOverlay.style.display === 'flex') {
       closeShortcuts();
+    }
+    if (e.key === 'Escape' && aboutOverlay.style.display === 'flex') {
+      closeAbout();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
       e.preventDefault();

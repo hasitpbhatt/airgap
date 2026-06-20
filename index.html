@@ -377,7 +377,7 @@
             </div>
           </div>
         </div>
-        <div class="command-hint">/compact · /clear</div>
+        <div class="command-hint">/compact · /clear · <span class="about-trigger" id="about-trigger">ⓘ About airgap</span></div>
       </div>
 
     </main>
@@ -404,6 +404,85 @@
         <div class="shortcuts-divider"></div>
         <div class="shortcut-row"><code>/compact</code><span>Compress conversation history</span></div>
         <div class="shortcut-row"><code>/clear</code><span>Clear current session</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div class="about-overlay" id="about-overlay" style="display:none;">
+    <div class="about-modal">
+      <div class="about-header">
+        <h2>About airgap</h2>
+        <button class="about-close-btn" id="about-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="about-body">
+        <p class="about-tagline">A personal AI agent that runs entirely in your browser. No servers, no signup, one HTML file.</p>
+
+        <div class="about-features">
+          <div class="about-feature">
+            <span class="about-feature-icon">🔍</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Web Fetch &amp; RSS</div>
+              <div class="about-feature-desc">Browse websites and subscribe to feeds</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">🧠</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Memory &amp; Notes</div>
+              <div class="about-feature-desc">Remember facts, store per session or globally</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">📁</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">File Upload</div>
+              <div class="about-feature-desc">Attach images, PDFs, code, and text files</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">🔎</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Chat Search</div>
+              <div class="about-feature-desc">Find messages in conversation (<kbd>Ctrl+F</kbd>)</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">🌐</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Global Search</div>
+              <div class="about-feature-desc">Search across all conversations</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">🔀</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Branching</div>
+              <div class="about-feature-desc">Fork conversations to explore alternate paths</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">💾</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Export</div>
+              <div class="about-feature-desc">Download as JSON, Markdown, or plain text</div>
+            </div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature-icon">🗣️</span>
+            <div class="about-feature-info">
+              <div class="about-feature-title">Voice Input</div>
+              <div class="about-feature-desc">Speak messages using browser speech recognition</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-footer">
+          <p class="about-philosophy">Your conversations stay in your browser. <strong>Full stop.</strong></p>
+          <a href="https://github.com/hasitpbhatt/airgap" target="_blank" rel="noopener" class="about-github-link">Star on GitHub →</a>
+        </div>
       </div>
     </div>
   </div>
