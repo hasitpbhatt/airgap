@@ -73,3 +73,14 @@ Always add a `mockFetchProxyRaw` test when modifying proxy-handling code to guar
 5. Every fix or feature must have a corresponding GitHub issue — reference it with `Fixes #N` in the commit body
 6. Open a PR against `main`
 7. CI runs the full test suite automatically
+
+## Release process
+
+1. Ensure `CHANGELOG.md` is up to date under the `[Unreleased]` section
+2. Run `npx playwright test` — all tests must pass
+3. Update the version in `package.json` (e.g. `1.1.0`)
+4. Update `CHANGELOG.md`: change `[Unreleased]` to the new version and date (e.g. `[1.1.0] — 2026-07-01`)
+5. Commit: `git commit -m "Release v1.1.0"`
+6. Tag: `git tag v1.1.0`
+7. Push: `git push origin main --tags`
+8. Create a GitHub Release from the tag with auto-generated notes
