@@ -374,7 +374,8 @@ const MODEL_PRICING = {
   'ministral-14b-2512':     { input: 0.0002, output: 0.0006 },
 };
 
-const MAX_TOOL_LOOP = 10;
+const MAX_TOOL_LOOP = 5;
+const MAX_TOOL_LOOP_RESUME = 5;
 const AUTO_COMPACT_THRESHOLD = 15;
 
 // State Variables
@@ -389,12 +390,16 @@ let settings = {
   modelName: 'mistral-small-latest',
   useMaxTurns: false,
   maxTurns: 5,
+  useMaxToolLoops: true,
+  maxToolLoops: 5,
   currentPersona: 'general',
   customSystemPrompt: '',
   customTools: []
 };
 let abortController = null;
 let isGenerating = false;
+let pausedAgentState = null;
+let continueResolve = null;
 let pendingDownloads = [];
 let pendingCharts = [];
 let pendingClipboard = [];
@@ -424,6 +429,8 @@ const elements = {
   modelNameInput: document.getElementById('model-name'),
   enableTurnsLimitCheckbox: document.getElementById('enable-turns-limit'),
   maxTurnsInput: document.getElementById('max-turns'),
+  enableToolLoopsLimitCheckbox: document.getElementById('enable-tool-loops-limit'),
+  maxToolLoopsInput: document.getElementById('max-tool-loops'),
   personaSelect: document.getElementById('persona-select'),
   systemPromptTextarea: document.getElementById('system-prompt'),
 
@@ -451,6 +458,7 @@ const elements = {
   inputInfo: document.getElementById('input-info'),
   micBtn: document.getElementById('mic-btn'),
   stopGenBtn: document.getElementById('stop-gen-btn'),
+  continueGenBtn: document.getElementById('continue-gen-btn'),
   sendBtn: document.getElementById('send-btn'),
 
   // Memory panel

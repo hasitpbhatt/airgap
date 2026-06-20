@@ -243,7 +243,7 @@ test.describe('Sender API', () => {
     expect(r.lastContent).toContain('User asked about European capitals.');
   });
 
-  test('tool call loop stops after MAX_TOOL_LOOP exceeded', async ({ page }) => {
+  test('tool call loop pauses after tool limit and shows Continue button', async ({ page }) => {
     const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
     await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
     await seedChat(page, {
@@ -281,15 +281,75 @@ test.describe('Sender API', () => {
     await page.waitForSelector('#sidebar');
 
     await page.evaluate(async () => await triggerSendAPI());
+    await page.waitForTimeout(500);
+
+    const state = await page.evaluate(() => pausedAgentState !== null);
+    expect(state).toBe(true);
+
+    const continueBtn = page.locator('#continue-gen-btn');
+    await expect(continueBtn).toBeVisible();
+
+    // Also verify the send button is visible
+    const sendBtn = page.locator('#send-btn');
+    await expect(sendBtn).toBeVisible();
+  });
+
+  test('Continue button resumes tool loop with extended budget', async ({ page }) => {
+    const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+    await seedSettings(page, { apiKey: 'sk-test', proxyUrl: apiUrl });
+    await seedChat(page, {
+      messages: [
+        { role: 'system', content: 'You are helpful.' },
+        { role: 'user', content: 'Keep calling tools.' },
+      ],
+    });
+    let callCount = 0;
+    await page.route(apiUrl, async (route) => {
+      callCount++;
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: sseChunks([
+          {
+            id: '1', object: 'chat.completion.chunk', choices: [{
+              index: 0,
+              delta: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [{
+                  index: 0,
+                  id: 'call_' + callCount,
+                  type: 'function',
+                  function: { name: 'get_current_time', arguments: '{}' }
+                }]
+              },
+              finish_reason: 'tool_calls'
+            }]
+          }
+        ]),
+      });
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+
+    // First invocation — pauses due to same-tool repetition guard
+    await page.evaluate(async () => await triggerSendAPI());
     await page.waitForTimeout(300);
 
-    const r = await page.evaluate(() => {
-      const active = getActiveChat();
-      return {
-        errorMsg: active?.messages?.find(m => m.isError)?.content || '',
-      };
-    });
-    expect(r.errorMsg).toContain('exceeded maximum');
+    const firstPaused = await page.evaluate(() => pausedAgentState !== null);
+    expect(firstPaused).toBe(true);
+    const firstCount = callCount;
+    expect(firstCount).toBeGreaterThanOrEqual(3);
+
+    // Click Continue to resume
+    const continueBtn = page.locator('#continue-gen-btn');
+    await expect(continueBtn).toBeVisible();
+    await continueBtn.click();
+    await page.waitForTimeout(500);
+
+    // After resuming, more calls were made and paused again
+    const secondPaused = await page.evaluate(() => pausedAgentState !== null);
+    expect(secondPaused).toBe(true);
+    expect(callCount).toBeGreaterThan(firstCount);
   });
 
   test('shows new loading bubble after tool calls for second stream', async ({ page }) => {

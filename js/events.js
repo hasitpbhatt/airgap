@@ -117,6 +117,9 @@ function init() {
   elements.enableTurnsLimitCheckbox.checked = settings.useMaxTurns;
   elements.maxTurnsInput.value = settings.maxTurns;
   elements.maxTurnsInput.disabled = !settings.useMaxTurns;
+  elements.enableToolLoopsLimitCheckbox.checked = settings.useMaxToolLoops;
+  elements.maxToolLoopsInput.value = settings.maxToolLoops;
+  elements.maxToolLoopsInput.disabled = !settings.useMaxToolLoops;
   elements.personaSelect.value = settings.currentPersona;
 
   if (settings.currentPersona === 'custom') {
@@ -270,6 +273,15 @@ function setupEventListeners() {
     saveSettings();
     updateInputUIState();
   });
+  elements.enableToolLoopsLimitCheckbox.addEventListener('change', (e) => {
+    settings.useMaxToolLoops = e.target.checked;
+    elements.maxToolLoopsInput.disabled = !settings.useMaxToolLoops;
+    saveSettings();
+  });
+  elements.maxToolLoopsInput.addEventListener('input', (e) => {
+    settings.maxToolLoops = Math.max(1, parseInt(e.target.value) || 5);
+    saveSettings();
+  });
 
   // Persona Selector binding
   elements.personaSelect.addEventListener('change', (e) => {
@@ -387,6 +399,9 @@ function setupEventListeners() {
   });
   elements.sendBtn.addEventListener('click', triggerSend);
   elements.stopGenBtn.addEventListener('click', stopGenerating);
+  elements.continueGenBtn.addEventListener('click', () => {
+    triggerSendAPI();
+  });
 
   // Voice input (SpeechRecognition)
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
