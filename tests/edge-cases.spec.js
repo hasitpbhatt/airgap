@@ -297,7 +297,7 @@ test.describe('Slash command menu', () => {
       ta.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await expect(menu).toBeVisible();
-    await expect(menu.locator('.slash-item')).toHaveCount(2);
+    await expect(menu.locator('.slash-item')).toHaveCount(5);
   });
 
   test('typing /cl filters to one command', async ({ page }) => {
@@ -380,5 +380,102 @@ test.describe('Slash command menu', () => {
     await page.locator('#slash-menu .slash-item[data-command="clear"]').click();
     await expect(page.locator('#slash-menu')).toBeHidden();
     await expect(page.locator('#chat-textarea')).toHaveValue('');
+  });
+
+  test('/new creates a new chat and clears textarea', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/new';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#chat-textarea')).toHaveValue('');
+    const chatCount = await page.evaluate(() => document.querySelectorAll('.chat-item').length);
+    expect(chatCount).toBeGreaterThanOrEqual(1);
+  });
+
+  test('/new in slash menu creates a new chat', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#slash-menu')).toBeVisible();
+    await page.locator('#slash-menu .slash-item[data-command="new"]').click();
+    await expect(page.locator('#chat-textarea')).toHaveValue('');
+    await expect(page.locator('#slash-menu')).toBeHidden();
+  });
+
+  test('/export json downloads conversation', async ({ page }) => {
+    let downloaded = false;
+    await page.route('**/*', (route) => {
+      if (route.request().url().startsWith('blob:')) {
+        downloaded = true;
+      }
+      route.continue();
+    });
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/export json';
+      triggerSend();
+    });
+    const chatCount = await page.evaluate(() => document.querySelectorAll('.chat-item').length);
+    expect(chatCount).toBeGreaterThanOrEqual(1);
+  });
+
+  test('/export with no argument defaults to json', async ({ page }) => {
+    let exportCalled = false;
+    await page.evaluate(() => {
+      const orig = window.exportCurrentChat;
+      window.exportCurrentChat = (fmt) => { exportCalled = true; };
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/export';
+      triggerSend();
+      window.exportCurrentChat = orig;
+    });
+  });
+
+  test('/persona switches persona', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/persona deep';
+      triggerSend();
+    });
+    const personaVal = await page.evaluate(() => settings.currentPersona);
+    expect(personaVal).toBe('deep');
+    const selectVal = await page.evaluate(() => document.getElementById('persona-select').value);
+    expect(selectVal).toBe('deep');
+  });
+
+  test('/persona is case-insensitive', async ({ page }) => {
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/persona Deep';
+      triggerSend();
+    });
+    const personaVal = await page.evaluate(() => settings.currentPersona);
+    expect(personaVal).toBe('deep');
+  });
+
+  test('/persona with invalid name is a no-op', async ({ page }) => {
+    const before = await page.evaluate(() => settings.currentPersona);
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/persona nonexistent';
+      triggerSend();
+    });
+    const after = await page.evaluate(() => settings.currentPersona);
+    expect(after).toBe(before);
+  });
+
+  test('/persona with no argument is a no-op', async ({ page }) => {
+    const before = await page.evaluate(() => settings.currentPersona);
+    await page.evaluate(() => {
+      const ta = document.getElementById('chat-textarea');
+      ta.value = '/persona';
+      triggerSend();
+    });
+    const after = await page.evaluate(() => settings.currentPersona);
+    expect(after).toBe(before);
   });
 });

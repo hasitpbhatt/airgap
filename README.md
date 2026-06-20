@@ -43,6 +43,18 @@ Web access uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
 
 **Test:** `npx playwright test` (requires Chromium, install via `npx playwright install chromium`)
 
+## Slash commands
+
+Type `/` in the chat textarea to see available commands:
+
+| Command | Action |
+|---------|--------|
+| `/compact` | Compress conversation history to stay within context limits |
+| `/clear` | Clear current conversation |
+| `/new` | Start a new conversation |
+| `/export [format]` | Download conversation as `json` (default), `md`, or `txt` |
+| `/persona <name>` | Switch persona: `general`, `child`, `deep`, `first-principles`, `socratic` |
+
 ## System requirements
 
 | Requirement | Details |
