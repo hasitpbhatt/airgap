@@ -705,7 +705,10 @@ function toggleChatSearch() {
 // Slash command menu state
 const slashCommands = [
   { command: 'compact', icon: 'file-text', label: '/compact', desc: 'Compress conversation history' },
-  { command: 'clear', icon: 'trash-2', label: '/clear', desc: 'Clear current conversation' }
+  { command: 'clear', icon: 'trash-2', label: '/clear', desc: 'Clear current conversation' },
+  { command: 'new', icon: 'plus-square', label: '/new', desc: 'New conversation' },
+  { command: 'export', icon: 'download', label: '/export', desc: 'Export conversation (json|md|txt)' },
+  { command: 'persona', icon: 'user-check', label: '/persona', desc: 'Switch persona (general|child|deep|first-principles|socratic)' }
 ];
 let slashMenuVisible = false;
 let slashHighlightIndex = 0;

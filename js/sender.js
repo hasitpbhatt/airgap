@@ -6,25 +6,73 @@ async function triggerSend() {
 
   if ((!text && !hasAttachment) || !activeChat || isGenerating) return;
 
-  // Handle commands
-  if (text === '/compact') {
-    elements.chatTextarea.value = '';
-    handleTextareaAutoGrow();
-    triggerCompact();
-    return;
-  }
-  if (text === '/clear') {
-    if (!activeChat) return;
-    activeChat.messages = [
-      { role: 'system', content: activeChat.systemPrompt }
-    ];
-    activeChat.turnCount = 0;
-    elements.chatTextarea.value = '';
-    handleTextareaAutoGrow();
-    saveChats();
-    renderChatFeed();
-    updateInputUIState();
-    return;
+  // Command registry
+  const COMMANDS = {
+    compact: () => {
+      elements.chatTextarea.value = '';
+      handleTextareaAutoGrow();
+      triggerCompact();
+    },
+    clear: () => {
+      if (!activeChat) return;
+      activeChat.messages = [
+        { role: 'system', content: activeChat.systemPrompt }
+      ];
+      activeChat.turnCount = 0;
+      elements.chatTextarea.value = '';
+      handleTextareaAutoGrow();
+      saveChats();
+      renderChatFeed();
+      updateInputUIState();
+    },
+    new: () => {
+      createNewChat();
+      elements.chatTextarea.value = '';
+      handleTextareaAutoGrow();
+    },
+    export: (format) => {
+      format = format || 'json';
+      const valid = ['json', 'markdown', 'md', 'text', 'txt'];
+      if (!valid.includes(format)) format = 'json';
+      if (format === 'md') format = 'markdown';
+      if (format === 'text') format = 'txt';
+      exportCurrentChat(format);
+    },
+    persona: (name) => {
+      if (!name) return;
+      const keys = Object.keys(PERSONAS);
+      const match = keys.find(k => k.toLowerCase() === name.toLowerCase());
+      if (!match) return;
+      settings.currentPersona = match;
+      elements.personaSelect.value = match;
+      if (match === 'custom') {
+        elements.systemPromptTextarea.value = settings.customSystemPrompt || '';
+        elements.systemPromptTextarea.disabled = false;
+      } else {
+        elements.systemPromptTextarea.value = PERSONAS[match]?.system || '';
+        elements.systemPromptTextarea.disabled = true;
+      }
+      saveSettings();
+      const currentChat = getActiveChat();
+      if (currentChat && getMessageCountWithoutSystem(currentChat) === 0) {
+        currentChat.persona = match;
+        currentChat.systemPrompt = match === 'custom'
+          ? (settings.customSystemPrompt || '')
+          : (PERSONAS[match]?.system || '');
+        currentChat.messages[0].content = currentChat.systemPrompt;
+        saveChats();
+      }
+    }
+  };
+
+  const cmdMatch = text.match(/^\/(\w+)(?:\s+(.*))?$/);
+  if (cmdMatch) {
+    const cmd = cmdMatch[1];
+    const arg = cmdMatch[2];
+    if (COMMANDS[cmd]) {
+      COMMANDS[cmd](arg);
+      return;
+    }
   }
 
   if (settings.useMaxTurns && activeChat.turnCount >= settings.maxTurns) {
