@@ -5,11 +5,11 @@
 
 Every AI agent you've used reports to a server. airgap reports to you.
 
-An autonomous AI agent that runs entirely in your browser. Browse the web, search the internet, read RSS feeds, remember facts across conversations, evaluate math — all through a single HTML file and an API key. No Docker, no npm, no signup, no server.
+An autonomous AI agent that runs entirely in your browser. Your messages and API key never leave your machine. Browse the web, search, read RSS, remember facts — just an API key and a browser tab. No Docker, no npm, no signup, no server backend.
 
 | 🛡️ Local by design | 🔌 Bring your own key | 📁 One HTML file |
 |---|---|---|
-| Messages, keys, and context stay in your browser — never uploaded to a third-party server. | Works with Mistral, OpenAI, or any OpenAI-compatible API. You control where queries go. | Zero servers. Zero databases. Zero signup. Open it, configure, and go. |
+| Messages, keys, and context stay in your browser — no user data leaves your machine. | Works with Mistral, OpenAI, or any OpenAI-compatible API. You control where queries go. | One file, no backend. UI icons and rendering load from public CDNs — libraries, not telemetry. |
 
 ![airgap screenshot](screenshot.png)
 
@@ -39,7 +39,7 @@ cd airgap
 
 Open `index.html` in a browser. Paste an API key. Send a message.
 
-Web access uses a Cloudflare Worker (`https://airgap-fetch.gitub.workers.dev/`).
+Web access uses a Cloudflare Worker (default) or any CORS proxy you configure. Searches try direct connections to public SearXNG instances first, then fall back to the proxy chain.
 
 **Test:** `npx playwright test` (requires Chromium, install via `npx playwright install chromium`)
 
