@@ -1,6 +1,7 @@
 # airgap
 
 [![CI](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml/badge.svg)](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://hasitpbhatt.github.io/airgap/)
 
 Every AI agent you've used reports to a server. airgap reports to you.
 
