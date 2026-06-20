@@ -10,6 +10,8 @@ An autonomous AI agent that runs entirely in your browser. Browse the web, searc
 |---|---|---|
 | Messages, keys, and context stay in your browser — never uploaded to a third-party server. | Works with Mistral, OpenAI, or any OpenAI-compatible API. You control where queries go. | Zero servers. Zero databases. Zero signup. Open it, configure, and go. |
 
+![airgap screenshot](screenshot.png)
+
 ## Features
 
 - **Web browsing** — Fetch any URL via a proxy (with automatic caching and domain rate-limit handling)
