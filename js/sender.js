@@ -2,8 +2,9 @@
 async function triggerSend() {
   const text = elements.chatTextarea.value.trim();
   const activeChat = getActiveChat();
+  const hasAttachment = pendingAttachment !== null;
 
-  if (!text || !activeChat || isGenerating) return;
+  if ((!text && !hasAttachment) || !activeChat || isGenerating) return;
 
   // Handle commands
   if (text === '/compact') {
@@ -36,7 +37,12 @@ async function triggerSend() {
     await triggerCompact();
   }
 
-  activeChat.messages.push({ role: 'user', content: text });
+  const userMsg = { role: 'user', content: text };
+  if (hasAttachment) {
+    userMsg.attachment = pendingAttachment;
+    clearPendingAttachmentUI();
+  }
+  activeChat.messages.push(userMsg);
   elements.chatTextarea.value = '';
   handleTextareaAutoGrow();
 
@@ -72,10 +78,15 @@ async function triggerSendAPI() {
   tryAutoScroll();
 
   abortController = new AbortController();
-  const messages = activeChat.messages.map(m => ({
-    role: m.role,
-    content: m.content
-  }));
+  const messages = activeChat.messages.map(m => {
+    if (m.role === 'user' && m.attachment) {
+      const desc = m.content
+        ? m.content + '\n\n---\n[User attached file: ' + m.attachment.name + ' (' + m.attachment.type + ')]'
+        : '[User attached file: ' + m.attachment.name + ' (' + m.attachment.type + ')]';
+      return { role: 'user', content: desc };
+    }
+    return { role: m.role, content: m.content };
+  });
   let toolDepth = 0;
   let saveFileUsed = false;
 
@@ -91,8 +102,9 @@ async function triggerSendAPI() {
         stream: true,
         messages
       };
-      if (AVAILABLE_TOOLS.length > 0) {
-        body.tools = AVAILABLE_TOOLS;
+      const allTools = getAllTools();
+      if (allTools.length > 0) {
+        body.tools = allTools;
       }
 
       const res = await fetch(settings.proxyUrl, {

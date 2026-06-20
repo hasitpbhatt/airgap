@@ -106,6 +106,18 @@
         <span>New Conversation</span>
       </button>
 
+      <!-- Global Chat Search -->
+      <div class="chat-search-global">
+        <div class="chat-search-global-input-wrapper">
+          <i data-lucide="search" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <input type="text" id="chat-search-global-input" class="chat-search-global-input" placeholder="Search conversations..." spellcheck="false">
+          <button class="chat-search-global-clear" id="chat-search-global-clear" style="display:none;">
+            <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+          </button>
+        </div>
+        <div class="chat-search-global-results" id="chat-search-global-results" style="display:none;"></div>
+      </div>
+
       <!-- Scrollable Chat List -->
       <div class="chat-list-container" id="chat-list">
         <!-- Rendered dynamically -->
@@ -194,6 +206,18 @@
             <textarea id="system-prompt" class="setting-input" style="resize: vertical; min-height: 80px;" placeholder="Instructions for the AI..."></textarea>
           </div>
 
+          <!-- Custom Tools Section -->
+          <div class="setting-group" id="custom-tools-container">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+              <label style="margin-bottom:0;font-size:0.75rem;">Custom Tools</label>
+              <button id="add-custom-tool-btn" class="setting-btn" style="font-size:0.7rem;padding:0.2rem 0.5rem;">
+                <i data-lucide="plus" style="width:10px;height:10px;"></i> Add Tool
+              </button>
+            </div>
+            <p style="font-size:0.65rem;color:hsl(var(--text-muted));margin:0 0 0.4rem;line-height:1.3;">Define custom function-calling tools that are sent to the API alongside built-in tools. The LLM can call them, but they have no automatic handler — results are displayed for reference.</p>
+            <div id="custom-tools-list"></div>
+          </div>
+
         </div>
       </div>
     </aside>
@@ -234,6 +258,10 @@
         </div>
 
         <div class="header-right">
+          <button class="header-btn" id="search-chat-btn" title="Search in conversation (Ctrl+F)">
+            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+            <span>Search</span>
+          </button>
           <button class="header-btn" id="clear-chat-btn" title="Clear current session messages">
             <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
             <span>Clear</span>
@@ -255,12 +283,44 @@
         </div>
       </header>
 
+      <!-- Chat Search Bar -->
+      <div class="chat-search-bar" id="chat-search-bar" style="display:none;">
+        <div class="chat-search-left">
+          <i data-lucide="search" style="width:14px;height:14px;flex-shrink:0;"></i>
+          <input type="search" id="chat-search-input" class="chat-search-input" placeholder="Search in this conversation..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="chat-search-right">
+          <span class="chat-search-counter" id="chat-search-counter"></span>
+          <button class="chat-search-nav" id="chat-search-prev" title="Previous match">
+            <i data-lucide="chevron-up" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="chat-search-nav" id="chat-search-next" title="Next match">
+            <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="chat-search-close" id="chat-search-close" title="Close search (Escape)">
+            <i data-lucide="x" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drop overlay (file drag-and-drop) -->
+      <div class="drop-overlay" id="drop-overlay" style="display:none;">
+        <div class="drop-overlay-content">
+          <i data-lucide="upload" style="width:36px;height:36px;"></i>
+          <p>Drop files here</p>
+          <span>Supports images, text files, PDFs, and more (max 10 MB)</span>
+        </div>
+      </div>
+
       <!-- Chat Feed View -->
       <div class="chat-feed-container" id="chat-feed-container">
         <div class="chat-feed-inner" id="chat-feed">
           <!-- Dynamically generated message rows or welcome screen -->
         </div>
       </div>
+
+      <!-- Hidden file input -->
+      <input type="file" id="file-input" hidden accept="image/*,.pdf,.txt,.js,.py,.html,.css,.json,.md,.csv,.xml,.yaml,.yml,.svg,.sh,.bat,.ps1,.log,.ini,.cfg,.toml">
 
       <!-- Footer / Input -->
       <div class="chat-input-container">
@@ -278,12 +338,27 @@
             placeholder="Type your message here... (Enter to send, Shift+Enter for newline)" 
             rows="1"></textarea>
 
+          <!-- File attachment chip -->
+          <div class="file-chip" id="file-chip" style="display:none;">
+            <i data-lucide="file" style="width:14px;height:14px;flex-shrink:0;"></i>
+            <span class="file-chip-name" id="file-chip-name"></span>
+            <span class="file-chip-size" id="file-chip-size"></span>
+            <button class="file-chip-remove" id="file-chip-remove" title="Remove file">
+              <i data-lucide="x" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+
           <div class="chat-input-controls">
             <div class="input-left-info" id="input-info">
               <!-- e.g. "Turns: 2 / 5" -->
             </div>
 
             <div class="input-right-buttons">
+              <!-- Attach file button -->
+              <button class="btn-attach" id="attach-file-btn" title="Attach file">
+                <i data-lucide="paperclip" style="width: 14px; height: 14px;"></i>
+              </button>
+
               <!-- Microphone button (voice input) -->
               <button class="btn-mic" id="mic-btn" title="Voice input">
                 <i data-lucide="mic" style="width: 14px; height: 14px;"></i>
@@ -325,6 +400,7 @@
         <div class="shortcut-row"><kbd>Esc</kbd><span>Close panel / Cancel editing</span></div>
         <div class="shortcut-row"><kbd>Ctrl</kbd><span>+</span><kbd>N</kbd><span>New conversation</span></div>
         <div class="shortcut-row"><kbd>Ctrl</kbd><span>+</span><kbd>B</kbd><span>Toggle sidebar</span></div>
+        <div class="shortcut-row"><kbd>Ctrl</kbd><span>+</span><kbd>F</kbd><span>Search in conversation</span></div>
         <div class="shortcuts-divider"></div>
         <div class="shortcut-row"><code>/compact</code><span>Compress conversation history</span></div>
         <div class="shortcut-row"><code>/clear</code><span>Clear current session</span></div>
