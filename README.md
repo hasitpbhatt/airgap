@@ -3,9 +3,11 @@
 [![CI](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml/badge.svg)](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://hasitpbhatt.github.io/airgap/)
 
-Every AI agent you've used reports to a server. airgap reports to you.
+Your own AI agent. Your key. Your browser. Zero backend.
 
-An autonomous AI agent that runs entirely in your browser. Your messages and API key never leave your machine. Browse the web, search, read RSS, remember facts — just an API key and a browser tab. No Docker, no npm, no signup, no server backend.
+An autonomous AI agent that runs entirely in your browser. Bring your own API key, open one HTML file, and get agent capabilities — web search, browsing, RSS, memory, notes, charts — without Docker, npm, or a cloud subscription.
+
+Designed for developers and technical professionals who want full stack visibility, no data leakage to third-party platforms, and no monthly paywall.
 
 | 🛡️ Local by design | 🔌 Bring your own key | 📁 One HTML file |
 |---|---|---|
@@ -13,15 +15,23 @@ An autonomous AI agent that runs entirely in your browser. Your messages and API
 
 ![airgap screenshot](screenshot.png)
 
+## Who is this for?
+
+- **Engineers in regulated industries** — fintech, healthcare, legal, defense. You need AI assistance but can't send data to third-party chat platforms. Airgap routes directly to your LLM provider — no intermediate server stores or inspects your conversations.
+- **API-key power users** — you already have Mistral, OpenAI, or Groq credits. You want agentic tools without a monthly subscription on top. Airgap is free: the cost is only what your API provider charges.
+- **Indie developers and tinkerers** — you want to understand, customize, and extend your AI agent. The entire codebase is 7 JS files (no build step, no framework). `git clone`, open `index.html`, start hacking.
+
+If you use ChatGPT or Claude and are happy with it, keep using it. Airgap is for when you need *your own instance* — fully transparent, fully controllable, no platform dependency.
+
 ## Features
 
-- **Web browsing** — Fetch any URL via a proxy (with automatic caching and domain rate-limit handling)
 - **Web search** — Searches across SearXNG, DuckDuckGo, Ecosia, Bing, and Brave with automatic fallback
-- **RSS reader** — Parses RSS 2.0, Atom, and RSS 1.0/RDF feeds
+- **Web browsing** — Fetch any URL via a proxy (with automatic caching and domain rate-limit handling)
 - **Global memory** — Remember facts across conversations; browse and manage memory from the sidebar
+- **RSS reader** — Parses RSS 2.0, Atom, and RSS 1.0/RDF feeds
+- **Notes** — Persistent global note-taking system
 - **File creation** — AI can create files and offer them as browser downloads
 - **Charts** — Generate bar, line, and pie charts rendered directly on Canvas (no charting library needed)
-- **Notes** — Persistent global note-taking system
 - **Clipboard** — Write text to clipboard with user-click confirmation
 - **Notifications** — Desktop notifications via Service Worker or Notification API
 - **Math evaluation** — Reliable computation using `Math.*` and arithmetic expressions
@@ -352,11 +362,14 @@ Set the **Tool Fetch Proxy URL** in settings to point to your own proxy endpoint
 
 ## Privacy
 
-Conversations go directly to the LLM API you configure. No data passes through a middleman. Memory stays in `localStorage` — fully exportable and deletable.
+Conversations go directly to the LLM API you configure. No data passes through an intermediate platform. Memory stays in `localStorage` — fully exportable and deletable.
 
 - **No telemetry** — zero analytics, zero tracking, zero background requests
 - **No accounts** — no signup, no email, no password
 - **No servers** — the HTML file is the app
+- **No third-party platform** — your conversations are never stored or inspected by a cloud intermediary
+
+> ⚠️ Your LLM provider (Mistral, OpenAI, etc.) still processes the messages you send them — that's the nature of using a remote API. Airgap removes the *additional* risk of a middleman platform. For full air-gap, pair with a local LLM via any OpenAI-compatible endpoint (llama.cpp, Ollama, vLLM).
 
 The entire codebase is open source.
 
