@@ -188,6 +188,14 @@
             </div>
             <input type="number" id="max-turns" class="setting-input" value="5" min="1" max="100">
           </div>
+          <div class="setting-group">
+            <div class="toggle-group">
+              <input type="checkbox" id="enable-tool-loops-limit" checked>
+              <label for="enable-tool-loops-limit">Enable Tool Call Limit</label>
+            </div>
+            <input type="number" id="max-tool-loops" class="setting-input" value="5" min="1" max="30">
+            <p style="margin:0.25rem 0 0;font-size:0.6rem;color:hsl(var(--text-muted));line-height:1.3">Controls agent "thinking depth" — lower = faster, higher = deeper multi-step reasoning.</p>
+          </div>
 
           <div class="setting-group">
             <label for="persona-select">System Persona Template</label>
@@ -368,6 +376,12 @@
               <button class="btn-stop" id="stop-gen-btn" style="display: none;">
                 <i data-lucide="square" style="width: 12px; height: 12px;"></i>
                 <span>Stop</span>
+              </button>
+
+              <!-- Continue Generating button (shown when tool limit reached) -->
+              <button class="btn-send" id="continue-gen-btn" style="display: none;">
+                <i data-lucide="play" style="width: 14px; height: 14px;"></i>
+                <span>Continue</span>
               </button>
               
               <!-- Send Button -->

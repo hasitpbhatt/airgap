@@ -107,6 +107,29 @@ async function triggerSendAPI() {
   const activeChat = getActiveChat();
   if (!activeChat) return;
 
+  let messages, toolDepth, saveFileUsed, consecutiveErrors, lastToolName, sameToolCount, effectiveLimit;
+
+  const isResume = !!pausedAgentState;
+
+  if (isResume) {
+    const state = pausedAgentState;
+    pausedAgentState = null;
+    messages = state.messages;
+    toolDepth = state.toolDepth;
+    saveFileUsed = state.saveFileUsed;
+    consecutiveErrors = 0;
+    lastToolName = '';
+    sameToolCount = 0;
+    effectiveLimit = toolDepth + (settings.useMaxToolLoops ? settings.maxToolLoops : MAX_TOOL_LOOP_RESUME);
+  } else {
+    toolDepth = 0;
+    saveFileUsed = false;
+    consecutiveErrors = 0;
+    lastToolName = '';
+    sameToolCount = 0;
+    effectiveLimit = settings.useMaxToolLoops ? settings.maxToolLoops : MAX_TOOL_LOOP;
+  }
+
   setGeneratingState(true);
 
   const loadingRow = document.createElement('div');
@@ -130,7 +153,9 @@ async function triggerSendAPI() {
   tryAutoScroll();
 
   abortController = new AbortController();
-  const messages = activeChat.messages.map(m => {
+
+  if (!isResume) {
+    messages = activeChat.messages.map(m => {
     if (m.role === 'user' && m.attachment) {
       const desc = m.content
         ? m.content + '\n\n---\n[User attached file: ' + m.attachment.name + ' (' + m.attachment.type + ')]'
@@ -138,12 +163,18 @@ async function triggerSendAPI() {
       return { role: 'user', content: desc };
     }
     return { role: m.role, content: m.content };
-  });
-  let toolDepth = 0;
-  let saveFileUsed = false;
+    });
+
+    // Inject tool call budget guidance into system prompt (in-memory only, not persisted)
+    const toolBudget = settings.useMaxToolLoops ? settings.maxToolLoops : MAX_TOOL_LOOP;
+    const toolCallHint = '\n\nYou have a budget of ' + toolBudget + ' tool call rounds per request. Prioritize the most impactful tool first. If a tool errors, try an alternative or ask the user — do not retry the same operation. Once you have enough information, provide your final answer rather than continuing to call tools.';
+    if (messages.length > 0 && messages[0].role === 'system') {
+      messages[0] = { ...messages[0], content: messages[0].content + toolCallHint };
+    }
+  }
 
   try {
-    while (toolDepth < MAX_TOOL_LOOP) {
+    while (toolDepth < effectiveLimit) {
       const headers = { 'Content-Type': 'application/json' };
       if (settings.apiKey) {
         headers['Authorization'] = `Bearer ${settings.apiKey}`;
@@ -240,6 +271,20 @@ async function triggerSendAPI() {
           const result = await executeToolCall(tc);
           updateToolCallUI(tc, result);
 
+          // Track consecutive errors
+          if (result && result.error) {
+            consecutiveErrors++;
+          } else {
+            consecutiveErrors = 0;
+          }
+          // Track same-tool repetition
+          if (tc.function.name === lastToolName) {
+            sameToolCount++;
+          } else {
+            sameToolCount = 1;
+            lastToolName = tc.function.name;
+          }
+
           if (tc.function.name === 'compact') {
             wasCompacted = true;
           } else {
@@ -283,6 +328,30 @@ async function triggerSendAPI() {
         tryAutoScroll();
 
         toolDepth++;
+
+        // Smart guard: pause on repeated errors
+        if (consecutiveErrors >= 2) {
+          const bubble = document.getElementById('temp-loading-bubble');
+          if (bubble) bubble.remove();
+          pausedAgentState = { messages, toolDepth, saveFileUsed };
+          setGeneratingState(false);
+          elements.continueGenBtn.style.display = 'flex';
+          renderChatFeed();
+          updateInputUIState();
+          return;
+        }
+        // Smart guard: pause on same-tool repetition
+        if (sameToolCount >= 3) {
+          const bubble = document.getElementById('temp-loading-bubble');
+          if (bubble) bubble.remove();
+          pausedAgentState = { messages, toolDepth, saveFileUsed };
+          setGeneratingState(false);
+          elements.continueGenBtn.style.display = 'flex';
+          renderChatFeed();
+          updateInputUIState();
+          return;
+        }
+
         continue;
       }
 
@@ -309,7 +378,17 @@ async function triggerSendAPI() {
       return;
     }
 
-    throw new Error(`Agent exceeded maximum of ${MAX_TOOL_LOOP} tool call rounds.`);
+    // Tool call limit reached — pause and wait for user decision
+    {
+      const bubble = document.getElementById('temp-loading-bubble');
+      if (bubble) bubble.remove();
+      pausedAgentState = { messages, toolDepth, saveFileUsed };
+      setGeneratingState(false);
+      elements.continueGenBtn.style.display = 'flex';
+      renderChatFeed();
+      updateInputUIState();
+      return;
+    }
   } catch (err) {
     const bubble = document.getElementById('temp-loading-bubble');
     if (bubble) bubble.remove();
@@ -335,6 +414,9 @@ async function triggerSendAPI() {
     abortController = null;
     renderChatFeed();
     updateInputUIState();
+    if (pausedAgentState) {
+      elements.continueGenBtn.style.display = 'flex';
+    }
   }
 }
 
@@ -431,6 +513,7 @@ function setGeneratingState(generating) {
   elements.chatTextarea.disabled = generating;
   elements.sendBtn.style.display = generating ? 'none' : 'flex';
   elements.stopGenBtn.style.display = generating ? 'flex' : 'none';
+  elements.continueGenBtn.style.display = 'none';
 
   if (!generating) {
     elements.chatTextarea.focus();

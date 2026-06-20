@@ -141,6 +141,8 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 | System Persona | General | 6 templates or custom prompt |
 | Enable Turns Limit | Off | Limits conversation to N rounds of user+assistant turns |
 | Max Turns | 5 | Only active when turns limit is enabled |
+| Enable Tool Call Limit | On | Limits tool calls per message to N rounds |
+| Max Tool Calls | 5 | Only active when tool call limit is enabled; range 1–30 |
 
 ### Environment injection
 
@@ -172,7 +174,7 @@ When a conversation reaches 15 non-system messages, the agent automatically summ
 
 ## Agent loop
 
-Each message can trigger up to **10 chained tool calls** (`MAX_TOOL_LOOP = 10`). The agent calls a tool, receives the result, then decides whether to call another tool or return a final response. This enables multi-step workflows like:
+Each message can trigger up to **5 chained tool calls** (configurable 1–30). The agent calls a tool, receives the result, then decides whether to call another tool or return a final response. This enables multi-step workflows like:
 
 1. Search the web for a topic
 2. Fetch a specific article
@@ -180,7 +182,7 @@ Each message can trigger up to **10 chained tool calls** (`MAX_TOOL_LOOP = 10`).
 4. Save a summary as a note
 5. Send a notification
 
-The loop stops when the agent returns a text response or reaches 10 iterations.
+The loop stops when the agent returns a text response or reaches the configured limit. When paused, a **Continue** button appears to grant 5 additional rounds. The loop also pauses early on 2+ consecutive errors (e.g., HTTP 429) or 3+ repeated calls to the same tool, preventing token waste.
 
 ## 24 tools
 
