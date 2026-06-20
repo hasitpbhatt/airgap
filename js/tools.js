@@ -179,7 +179,23 @@ async function executeToolCall(toolCall) {
   if (name === 'search_web') {
     try {
       const query = encodeURIComponent(args.query);
-      const fetchUrl = settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/' ? settings.fetchUrl : 'https://airgap-fetch.gitub.workers.dev/';
+
+      var proxyUrls = ['https://airgap-fetch.gitub.workers.dev/'];
+      if (settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/') {
+        proxyUrls.push(settings.fetchUrl);
+      }
+      if (settings.backupFetchUrl) {
+        proxyUrls.push(settings.backupFetchUrl);
+      }
+      var fallbackProxies = [
+        'https://cors-anywhere.onrender.com',
+        'https://api.allorigins.win/raw',
+        'https://proxy.cors.sh',
+        'https://corsfix.com'
+      ];
+      for (var fpi = 0; fpi < fallbackProxies.length; fpi++) {
+        if (proxyUrls.indexOf(fallbackProxies[fpi]) === -1) proxyUrls.push(fallbackProxies[fpi]);
+      }
 
       const searxngInstances = [
         'https://searx.be',
@@ -207,7 +223,10 @@ async function executeToolCall(toolCall) {
         },
         {
           name: 'SearXNG',
-          instances: searxngInstances.map(base => base + '/search?q=' + query + '&format=json'),
+          instances: searxngInstances.flatMap(base => [
+            base + '/search?q=' + query + '&format=json',
+            base + '/search?q=' + query
+          ]),
           parse: function(content) {
             try {
               const json = JSON.parse(content);
@@ -218,6 +237,23 @@ async function executeToolCall(toolCall) {
                   snippet: r.content || ''
                 }));
               }
+            } catch {}
+            try {
+              const results = [];
+              var articleRe = /<article[^>]*>([\s\S]*?)<\/article>/gi;
+              var am;
+              while ((am = articleRe.exec(content)) !== null) {
+                var lm = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i.exec(am[1]);
+                if (lm) {
+                  var title = lm[2].replace(/<[^>]+>/g, '').trim();
+                  var pRe = /<p[^>]*>([\s\S]*?)<\/p>/i;
+                  var pm = pRe.exec(am[1]);
+                  var snippet = pm ? pm[1].replace(/<[^>]+>/g, '').trim() : '';
+                  if (title) results.push({ title: title, url: lm[1], snippet: snippet });
+                  if (results.length >= 10) break;
+                }
+              }
+              return results;
             } catch {}
             return [];
           }
@@ -300,9 +336,9 @@ async function executeToolCall(toolCall) {
                 return { engine: e.name, data: { content: text, status: directRes.status }, parse: e.parse };
               }
             } catch {}
-            if (fetchUrl) {
+            for (var dpi = 0; dpi < proxyUrls.length; dpi++) {
               try {
-                var proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal });
+                var proxyRes = await fetch(proxyUrls[dpi] + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal });
                 var d = await parseProxyResponse(proxyRes);
                 if (!d.error && d.content && d.content.length > 50) return { engine: e.name, data: d, parse: e.parse };
               } catch {}
@@ -316,15 +352,22 @@ async function executeToolCall(toolCall) {
               try {
                 const directRes = await fetch(url, { signal: abortController?.signal });
                 if (directRes.ok) {
-                  const json = await directRes.json();
-                  if (json.results && Array.isArray(json.results) && json.results.length > 0) {
-                    return { engine: e.name, data: { content: JSON.stringify(json) }, parse: e.parse };
+                  if (url.includes('format=json')) {
+                    const json = await directRes.json();
+                    if (json.results && Array.isArray(json.results) && json.results.length > 0) {
+                      return { engine: e.name, data: { content: JSON.stringify(json) }, parse: e.parse };
+                    }
+                  } else {
+                    const html = await directRes.text();
+                    if (html.length > 100) {
+                      return { engine: e.name, data: { content: html }, parse: e.parse };
+                    }
                   }
                 }
               } catch {}
-              if (fetchUrl) {
+              for (var spi = 0; spi < proxyUrls.length; spi++) {
                 try {
-                  const proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
+                  const proxyRes = await fetch(proxyUrls[spi] + '?url=' + encodeURIComponent(url), { signal: abortController?.signal });
                   const d = await parseProxyResponse(proxyRes);
                   if (!d.error && d.content && d.content.length > 100) {
                     return { engine: e.name, data: d, parse: e.parse };
@@ -335,9 +378,16 @@ async function executeToolCall(toolCall) {
             throw new Error('All SearXNG instances failed');
           })();
         }
-        return fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal })
-          .then(r => parseProxyResponse(r))
-          .then(d => ({ engine: e.name, data: d, parse: e.parse }));
+        return (async () => {
+          for (var ppi = 0; ppi < proxyUrls.length; ppi++) {
+            try {
+              var proxyRes = await fetch(proxyUrls[ppi] + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal });
+              var d = await parseProxyResponse(proxyRes);
+              if (!d.error && d.content && d.content.length > 100) return { engine: e.name, data: d, parse: e.parse };
+            } catch {}
+          }
+          throw new Error('All proxies failed for ' + e.name);
+        })();
       }));
 
       const priority = ['SearXNG', 'DDG Instant Answer', 'DuckDuckGo', 'Ecosia', 'Bing', 'Brave'];
