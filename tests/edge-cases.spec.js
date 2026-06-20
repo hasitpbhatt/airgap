@@ -421,18 +421,18 @@ test.describe('Slash command menu', () => {
     });
     const chatCount = await page.evaluate(() => document.querySelectorAll('.chat-item').length);
     expect(chatCount).toBeGreaterThanOrEqual(1);
+    const taVal = await page.evaluate(() => document.getElementById('chat-textarea').value);
+    expect(taVal).toBe('');
   });
 
   test('/export with no argument defaults to json', async ({ page }) => {
-    let exportCalled = false;
     await page.evaluate(() => {
-      const orig = window.exportCurrentChat;
-      window.exportCurrentChat = (fmt) => { exportCalled = true; };
       const ta = document.getElementById('chat-textarea');
       ta.value = '/export';
       triggerSend();
-      window.exportCurrentChat = orig;
     });
+    const taVal = await page.evaluate(() => document.getElementById('chat-textarea').value);
+    expect(taVal).toBe('');
   });
 
   test('/persona switches persona', async ({ page }) => {
@@ -445,6 +445,8 @@ test.describe('Slash command menu', () => {
     expect(personaVal).toBe('deep');
     const selectVal = await page.evaluate(() => document.getElementById('persona-select').value);
     expect(selectVal).toBe('deep');
+    const taVal = await page.evaluate(() => document.getElementById('chat-textarea').value);
+    expect(taVal).toBe('');
   });
 
   test('/persona is case-insensitive', async ({ page }) => {
@@ -455,6 +457,8 @@ test.describe('Slash command menu', () => {
     });
     const personaVal = await page.evaluate(() => settings.currentPersona);
     expect(personaVal).toBe('deep');
+    const taVal = await page.evaluate(() => document.getElementById('chat-textarea').value);
+    expect(taVal).toBe('');
   });
 
   test('/persona with invalid name is a no-op', async ({ page }) => {

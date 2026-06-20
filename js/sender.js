@@ -37,6 +37,8 @@ async function triggerSend() {
       if (format === 'md') format = 'markdown';
       if (format === 'text') format = 'txt';
       exportCurrentChat(format);
+      elements.chatTextarea.value = '';
+      handleTextareaAutoGrow();
     },
     persona: (name) => {
       if (!name) return;
@@ -62,6 +64,8 @@ async function triggerSend() {
         currentChat.messages[0].content = currentChat.systemPrompt;
         saveChats();
       }
+      elements.chatTextarea.value = '';
+      handleTextareaAutoGrow();
     }
   };
 
