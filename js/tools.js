@@ -22,17 +22,7 @@ async function executeToolCall(toolCall) {
     const CACHE_TTL = 300000;
     const cacheKey = '_fetch_cache_' + encodeURIComponent(args.url);
 
-    try {
-      const cachedRaw = llmStoreGet(cacheKey);
-      if (cachedRaw) {
-        const cached = JSON.parse(cachedRaw);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-          return { ...cached, cached: true, age_ms: Date.now() - cached.timestamp };
-        }
-      }
-    } catch {}
-
-    // Check domain block
+    // Check domain block first (before cache, so blocked domains can't return stale data)
     try {
       const host = new URL(args.url).host;
       const blockRaw = llmStoreGet('_blocked_domain_' + host);
@@ -44,12 +34,31 @@ async function executeToolCall(toolCall) {
       }
     } catch {}
 
+    try {
+      const cachedRaw = llmStoreGet(cacheKey);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+          return { ...cached, cached: true, age_ms: Date.now() - cached.timestamp };
+        }
+      }
+    } catch {}
+
     var proxyUrls = ['https://airgap-fetch.gitub.workers.dev/'];
     if (settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/') {
       proxyUrls.push(settings.fetchUrl);
     }
     if (settings.backupFetchUrl) {
       proxyUrls.push(settings.backupFetchUrl);
+    }
+    var fallbackProxies = [
+      'https://cors-anywhere.onrender.com',
+      'https://api.allorigins.win/raw',
+      'https://proxy.cors.sh',
+      'https://corsfix.com'
+    ];
+    for (var fpi = 0; fpi < fallbackProxies.length; fpi++) {
+      if (proxyUrls.indexOf(fallbackProxies[fpi]) === -1) proxyUrls.push(fallbackProxies[fpi]);
     }
 
     var lastErr = null;
@@ -214,6 +223,22 @@ async function executeToolCall(toolCall) {
           }
         },
         {
+          name: 'DDG Instant Answer',
+          url: 'https://api.duckduckgo.com/?q=' + query + '&format=json&no_html=1&skip_disambig=1',
+          direct: true,
+          parse: function(content) {
+            var json = JSON.parse(content);
+            var results = [];
+            if (json.AbstractText) results.push({ title: json.Heading || 'Summary', url: json.AbstractURL || '', snippet: json.AbstractText });
+            if (json.Answer) results.push({ title: 'Answer', url: '', snippet: json.Answer });
+            if (json.Definition) results.push({ title: json.Definition, url: json.DefinitionURL || '', snippet: json.DefinitionSource || '' });
+            (json.RelatedTopics || []).slice(0, 5).forEach(function(t) {
+              if (t.Text) results.push({ title: t.Text.split(' - ')[0], url: t.FirstURL || '', snippet: t.Text });
+            });
+            return results;
+          }
+        },
+        {
           name: 'Ecosia',
           url: 'https://www.ecosia.org/search?q=' + query,
           parse: function(html) {
@@ -266,6 +291,25 @@ async function executeToolCall(toolCall) {
       ];
 
       const settled = await Promise.allSettled(engines.map(e => {
+        if (e.direct) {
+          return (async function() {
+            try {
+              var directRes = await fetch(e.url, { signal: abortController?.signal });
+              if (directRes.ok) {
+                var text = await directRes.text();
+                return { engine: e.name, data: { content: text, status: directRes.status }, parse: e.parse };
+              }
+            } catch {}
+            if (fetchUrl) {
+              try {
+                var proxyRes = await fetch(fetchUrl + '?url=' + encodeURIComponent(e.url), { signal: abortController?.signal });
+                var d = await parseProxyResponse(proxyRes);
+                if (!d.error && d.content && d.content.length > 50) return { engine: e.name, data: d, parse: e.parse };
+              } catch {}
+            }
+            throw new Error('All attempts failed for ' + e.name);
+          })();
+        }
         if (e.instances) {
           return (async () => {
             for (const url of e.instances) {
@@ -296,7 +340,7 @@ async function executeToolCall(toolCall) {
           .then(d => ({ engine: e.name, data: d, parse: e.parse }));
       }));
 
-      const priority = ['DuckDuckGo', 'SearXNG', 'Ecosia', 'Bing', 'Brave'];
+      const priority = ['SearXNG', 'DDG Instant Answer', 'DuckDuckGo', 'Ecosia', 'Bing', 'Brave'];
       for (const name of priority) {
         const entry = settled.find(s => s.status === 'fulfilled' && s.value.engine === name);
         if (!entry) continue;

@@ -145,7 +145,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'search_web',
-      description: 'Search the web for a query and return a list of results (titles, URLs, snippets). Tries SearXNG (public instances, direct from browser) first, then falls back to proxy-based engines (DuckDuckGo, Ecosia, Bing, Brave). Best results with SearXNG as it uses a native JSON API and bypasses any proxy blocks.',
+      description: 'Search the web for a query and return a list of results (titles, URLs, snippets). Tries SearXNG (public instances, direct from browser) and DDG Instant Answer API (direct, no proxy) first, then falls back to proxy-based engines (DuckDuckGo Lite, Ecosia, Bing, Brave).',
       parameters: {
         type: 'object',
         properties: {
