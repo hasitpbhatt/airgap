@@ -1,3 +1,22 @@
 node_modules/
 test-results/
 playwright-report/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editor configs
+.idea/
+.vscode/
+*.sublime-*
