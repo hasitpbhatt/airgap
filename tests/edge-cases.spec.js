@@ -151,6 +151,53 @@ test.describe('Keyboard shortcuts', () => {
   });
 });
 
+test.describe('About modal', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearStorage(page);
+    await seedSettings(page, { apiKey: 'test-key' });
+    await page.goto(INDEX);
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('clicking the about trigger opens the modal', async ({ page }) => {
+    const overlay = page.locator('#about-overlay');
+    await expect(overlay).toBeHidden();
+    await page.locator('#about-trigger').click();
+    await expect(overlay).toBeVisible();
+  });
+
+  test('Escape closes the about modal', async ({ page }) => {
+    const overlay = page.locator('#about-overlay');
+    await page.evaluate(() => window.openAbout());
+    await expect(overlay).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(overlay).toBeHidden();
+  });
+
+  test('close button hides the about modal', async ({ page }) => {
+    const overlay = page.locator('#about-overlay');
+    await page.evaluate(() => window.openAbout());
+    await expect(overlay).toBeVisible();
+    await page.locator('#about-close-btn').click();
+    await expect(overlay).toBeHidden();
+  });
+
+  test('clicking overlay background closes the about modal', async ({ page }) => {
+    const overlay = page.locator('#about-overlay');
+    await page.evaluate(() => window.openAbout());
+    await expect(overlay).toBeVisible();
+    await overlay.click({ position: { x: 10, y: 10 } });
+    await expect(overlay).toBeHidden();
+  });
+
+  test('about modal shows feature items', async ({ page }) => {
+    await page.evaluate(() => window.openAbout());
+    await expect(page.locator('.about-modal')).toBeVisible();
+    await expect(page.locator('.about-feature')).toHaveCount(8);
+    await expect(page.locator('.about-feature-title').first()).toHaveText('Web Fetch & RSS');
+  });
+});
+
 test.describe('Smart auto-scroll', () => {
   test.beforeEach(async ({ page }) => {
     await clearStorage(page);
