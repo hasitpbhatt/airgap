@@ -382,13 +382,15 @@ let settings = {
   useMaxTurns: false,
   maxTurns: 5,
   currentPersona: 'general',
-  customSystemPrompt: ''
+  customSystemPrompt: '',
+  customTools: []
 };
 let abortController = null;
 let isGenerating = false;
 let pendingDownloads = [];
 let pendingCharts = [];
 let pendingClipboard = [];
+let pendingAttachment = null; // { name, type, data, size }
 let userScrolledAway = false;
 
 // DOM Elements Reference
@@ -420,10 +422,19 @@ const elements = {
   // Main Chat UI
   activeChatTitle: document.getElementById('active-chat-title'),
   editTitleBtn: document.getElementById('edit-title-btn'),
+  searchChatBtn: document.getElementById('search-chat-btn'),
   clearChatBtn: document.getElementById('clear-chat-btn'),
   exportChatBtn: document.getElementById('export-chat-btn'),
   chatFeedContainer: document.getElementById('chat-feed-container'),
   chatFeed: document.getElementById('chat-feed'),
+
+  // Search bar
+  chatSearchBar: document.getElementById('chat-search-bar'),
+  chatSearchInput: document.getElementById('chat-search-input'),
+  chatSearchPrev: document.getElementById('chat-search-prev'),
+  chatSearchNext: document.getElementById('chat-search-next'),
+  chatSearchClose: document.getElementById('chat-search-close'),
+  chatSearchCounter: document.getElementById('chat-search-counter'),
 
   // Footer Input
   limitReachedBanner: document.getElementById('limit-reached-banner'),
@@ -440,7 +451,26 @@ const elements = {
   memoryPanel: document.getElementById('memory-panel'),
   memoryList: document.getElementById('memory-list'),
   memorySearch: document.getElementById('memory-search'),
-  clearMemoryBtn: document.getElementById('clear-memory-btn')
+  clearMemoryBtn: document.getElementById('clear-memory-btn'),
+
+  // Global chat search
+  chatSearchGlobalInput: document.getElementById('chat-search-global-input'),
+  chatSearchGlobalClear: document.getElementById('chat-search-global-clear'),
+  chatSearchGlobalResults: document.getElementById('chat-search-global-results'),
+
+  // Custom tools
+  customToolsContainer: document.getElementById('custom-tools-container'),
+  customToolsList: document.getElementById('custom-tools-list'),
+  addCustomToolBtn: document.getElementById('add-custom-tool-btn'),
+
+  // File attachment
+  fileInput: document.getElementById('file-input'),
+  attachFileBtn: document.getElementById('attach-file-btn'),
+  fileChip: document.getElementById('file-chip'),
+  fileChipName: document.getElementById('file-chip-name'),
+  fileChipSize: document.getElementById('file-chip-size'),
+  fileChipRemove: document.getElementById('file-chip-remove'),
+  dropOverlay: document.getElementById('drop-overlay')
 };
 
 // Check if there is an environment/host injected proxy URL fallback

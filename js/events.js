@@ -149,6 +149,7 @@ function init() {
   }
 
   lucide.createIcons();
+  renderCustomToolsList();
   setupAutoScroll();
   setupEventListeners();
   adjustResponsiveLayout();
@@ -161,6 +162,7 @@ function setupEventListeners() {
     const isOpen = elements.settingsPanel.classList.toggle('open');
     elements.settingsChevron.setAttribute('data-lucide', isOpen ? 'chevron-down' : 'chevron-up');
     lucide.createIcons();
+    if (isOpen) renderCustomToolsList();
   });
 
   // Memory panel toggle
@@ -434,7 +436,113 @@ function setupEventListeners() {
     elements.micBtn.classList.add('hidden');
   }
 
+  // ── Custom Tools ───────────────────────────────────────────────────────
+  elements.addCustomToolBtn.addEventListener('click', function() {
+    showCustomToolEditor();
+  });
+
+  // ── Global Chat Search ──────────────────────────────────────────────────
+  const globalSearchInput = elements.chatSearchGlobalInput;
+  let globalSearchTimer = null;
+  globalSearchInput.addEventListener('input', function() {
+    clearTimeout(globalSearchTimer);
+    globalSearchTimer = setTimeout(() => performGlobalChatSearch(this.value), 200);
+  });
+  globalSearchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      clearGlobalChatSearch();
+      this.blur();
+    }
+  });
+  elements.chatSearchGlobalClear.addEventListener('click', function() {
+    clearGlobalChatSearch();
+    globalSearchInput.focus();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'f') {
+      e.preventDefault();
+      globalSearchInput.focus();
+      globalSearchInput.select();
+    }
+    if (e.key === 'Escape' && document.activeElement === globalSearchInput) {
+      clearGlobalChatSearch();
+      globalSearchInput.blur();
+    }
+  });
+
+  // ── File Attachment Events ──────────────────────────────────────────────
+  elements.attachFileBtn.addEventListener('click', function() {
+    elements.fileInput.click();
+  });
+
+  elements.fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) handleFileAttach(file);
+    e.target.value = '';
+  });
+
+  elements.fileChipRemove.addEventListener('click', function() {
+    clearPendingAttachmentUI();
+  });
+
+  elements.chatTextarea.addEventListener('paste', function(e) {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          handleFileAttach(file);
+        }
+        return;
+      }
+    }
+  });
+
+  // Drag-and-drop on the feed container
+  const feedArea = elements.chatFeedContainer;
+  let dragCounter = 0;
+
+  feedArea.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter++;
+    if (dragCounter === 1) {
+      elements.dropOverlay.style.display = 'flex';
+    }
+  });
+
+  feedArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  feedArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      elements.dropOverlay.style.display = 'none';
+    }
+  });
+
+  feedArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter = 0;
+    elements.dropOverlay.style.display = 'none';
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileAttach(file);
+  });
+
   document.addEventListener('click', (e) => {
+    // Dismiss global search when clicking outside
+    if (!e.target.closest('.chat-search-global')) {
+      clearGlobalChatSearch();
+    }
+
     // Slash menu item click
     const slashItem = e.target.closest('.slash-item');
     if (slashItem) {
@@ -517,9 +625,60 @@ function setupEventListeners() {
       e.preventDefault();
       toggleSidebar();
     }
+    // Ctrl+F / Cmd+F — toggle search bar
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleChatSearch();
+    }
+    // Escape — close search bar
+    if (e.key === 'Escape' && chatSearchState.visible) {
+      e.preventDefault();
+      clearChatSearch();
+      elements.chatTextarea.focus();
+    }
+  });
+
+  // ── Chat Search Events ────────────────────────────────────────────────
+  elements.searchChatBtn.addEventListener('click', toggleChatSearch);
+
+  let searchDebounceTimer = null;
+  elements.chatSearchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(performChatSearch, 200);
+  });
+
+  elements.chatSearchPrev.addEventListener('click', () => navigateChatSearch(-1));
+  elements.chatSearchNext.addEventListener('click', () => navigateChatSearch(1));
+  elements.chatSearchClose.addEventListener('click', () => {
+    clearChatSearch();
+    elements.chatTextarea.focus();
+  });
+
+  // Close on blur with delay to allow click on nav buttons
+  elements.chatSearchInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (chatSearchState.visible && !elements.chatSearchBar.contains(document.activeElement)) {
+        // keep bar open, just let user click nav buttons
+      }
+    }, 150);
   });
 
   window.addEventListener('resize', adjustResponsiveLayout);
+}
+
+function toggleChatSearch() {
+  if (chatSearchState.visible) {
+    clearChatSearch();
+    elements.chatTextarea.focus();
+  } else {
+    chatSearchState.visible = true;
+    elements.chatSearchBar.style.display = 'flex';
+    elements.chatSearchInput.value = '';
+    elements.chatSearchCounter.textContent = '';
+    elements.chatSearchInput.focus();
+    performChatSearch();
+  }
 }
 
 // Slash command menu state

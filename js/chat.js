@@ -7,6 +7,236 @@ function saveChats() {
   localStorage.setItem('opencode_chats', JSON.stringify(chats));
 }
 
+// Custom Tools Management
+function renderCustomToolsList() {
+  const container = elements.customToolsList;
+  if (!container) return;
+  const tools = settings.customTools || [];
+  if (tools.length === 0) {
+    container.innerHTML = '<div style="font-size:0.7rem;color:hsl(var(--text-muted));padding:0.3rem 0;">No custom tools defined.</div>';
+    return;
+  }
+  container.innerHTML = tools.map((tool, i) => {
+    const paramsStr = tool.parameters ? JSON.stringify(tool.parameters, null, 2) : 'No parameters';
+    return `
+      <div class="custom-tool-card">
+        <div class="custom-tool-header">
+          <span class="custom-tool-name">${escapeHtml(tool.name || 'unnamed')}</span>
+          <button class="custom-tool-remove" data-tool-index="${i}" title="Remove tool">
+            <i data-lucide="x" style="width:12px;height:12px;"></i>
+          </button>
+        </div>
+        <div class="custom-tool-desc">${escapeHtml(tool.description || '')}</div>
+        <div class="custom-tool-params-preview">${escapeHtml(paramsStr)}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.custom-tool-remove').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const idx = parseInt(this.dataset.toolIndex);
+      if (showConfirm('Remove custom tool "' + (settings.customTools[idx]?.name || 'unnamed') + '"?')) {
+        settings.customTools.splice(idx, 1);
+        saveSettings();
+        renderCustomToolsList();
+      }
+    });
+  });
+
+  lucide.createIcons();
+}
+
+function showCustomToolEditor(existingIndex) {
+  const tools = settings.customTools || [];
+  let tool = existingIndex !== undefined ? tools[existingIndex] : { name: '', description: '', parameters: {} };
+  const isEdit = existingIndex !== undefined;
+
+  const name = prompt('Tool name (e.g. get_weather):', tool.name || '');
+  if (!name || !name.trim()) return;
+  const description = prompt('Tool description:', tool.description || '');
+  if (!description) return;
+  const paramsStr = prompt('Parameters JSON schema (optional — leave empty for no parameters):',
+    tool.parameters && Object.keys(tool.parameters).length ? JSON.stringify(tool.parameters, null, 2) : '');
+
+  let parameters = {};
+  if (paramsStr && paramsStr.trim()) {
+    try {
+      parameters = JSON.parse(paramsStr);
+    } catch {
+      showToast('Invalid JSON for parameters', 'error');
+      return;
+    }
+  }
+
+  const toolDef = {
+    type: 'function',
+    function: {
+      name: name.trim(),
+      description: description.trim(),
+      parameters: Object.keys(parameters).length > 0 ? parameters : undefined
+    }
+  };
+
+  if (isEdit) {
+    tools[existingIndex] = toolDef;
+  } else {
+    tools.push(toolDef);
+  }
+
+  settings.customTools = tools;
+  saveSettings();
+  renderCustomToolsList();
+}
+
+function getAllTools() {
+  const builtIn = AVAILABLE_TOOLS;
+  const custom = settings.customTools || [];
+  return builtIn.concat(custom);
+}
+
+// Global chat search
+function performGlobalChatSearch(query) {
+  const container = elements.chatSearchGlobalResults;
+  const q = query.toLowerCase().trim();
+
+  if (!q) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    elements.chatSearchGlobalClear.style.display = 'none';
+    return;
+  }
+
+  elements.chatSearchGlobalClear.style.display = 'flex';
+  const results = [];
+
+  chats.forEach(chat => {
+    const titleMatch = chat.title.toLowerCase().includes(q);
+    if (titleMatch) {
+      results.push({
+        chatId: chat.id,
+        title: chat.title,
+        snippet: 'Title match',
+        msgIdx: -1
+      });
+    }
+    chat.messages.forEach((msg, idx) => {
+      if (msg.role === 'system') return;
+      const content = (msg.content || '');
+      const lower = content.toLowerCase();
+      let pos = lower.indexOf(q);
+      let snippetCount = 0;
+      while (pos !== -1 && snippetCount < 3) {
+        const start = Math.max(0, pos - 40);
+        const end = Math.min(content.length, pos + q.length + 60);
+        let snippet = content.slice(start, end);
+        if (start > 0) snippet = '...' + snippet;
+        if (end < content.length) snippet = snippet + '...';
+        results.push({
+          chatId: chat.id,
+          title: chat.title,
+          snippet: escapeHtml(snippet),
+          msgIdx: idx,
+          role: msg.role
+        });
+        snippetCount++;
+        pos = lower.indexOf(q, pos + 1);
+      }
+    });
+  });
+
+  if (results.length === 0) {
+    container.innerHTML = '<div class="chat-search-global-result-empty">No results found</div>';
+    container.style.display = 'block';
+    return;
+  }
+
+  container.innerHTML = results.map((r, i) => `
+    <div class="chat-search-global-result-item" data-index="${i}">
+      <div class="chat-search-global-result-title">${escapeHtml(r.title)}${r.msgIdx >= 0 ? ' · ' + r.role : ''}</div>
+      <div class="chat-search-global-result-snippet">${r.msgIdx >= 0 ? r.snippet : 'Conversation title matches search'}</div>
+    </div>
+  `).join('');
+
+  container.style.display = 'block';
+
+  container.querySelectorAll('.chat-search-global-result-item').forEach(el => {
+    el.addEventListener('click', function() {
+      const idx = parseInt(this.dataset.index);
+      const r = results[idx];
+      selectChat(r.chatId);
+      if (window.innerWidth <= 768) toggleSidebar(false);
+      if (r.msgIdx >= 0) {
+        setTimeout(() => {
+          const msgs = elements.chatFeed.querySelectorAll('.message-row');
+          if (msgs[r.msgIdx]) msgs[r.msgIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+      elements.chatSearchGlobalInput.value = '';
+      container.style.display = 'none';
+      container.innerHTML = '';
+      elements.chatSearchGlobalClear.style.display = 'none';
+    });
+  });
+}
+
+function clearGlobalChatSearch() {
+  elements.chatSearchGlobalInput.value = '';
+  elements.chatSearchGlobalResults.style.display = 'none';
+  elements.chatSearchGlobalResults.innerHTML = '';
+  elements.chatSearchGlobalClear.style.display = 'none';
+}
+
+// File attachment helpers
+function formatFileSize(bytes) {
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return bytes + ' B';
+}
+
+function getFileIcon(mime, name) {
+  if (mime.startsWith('image/')) return 'image';
+  if (mime === 'application/pdf') return 'file-text';
+  const ext = name.split('.').pop().toLowerCase();
+  if (['js','py','html','css','json','md','xml','yaml','yml','sh','bat','ps1','c','cpp','h','java','rs','go','ts','jsx','tsx','sql','rb','php','pl','lua','r','swift','kt','scala','dart','prisma','graphql'].includes(ext)) return 'file-code';
+  if (['txt','log','ini','cfg','toml','env','gitignore','dockerfile'].includes(ext)) return 'file-text';
+  return 'file';
+}
+
+function handleFileAttach(file) {
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showToast("File too large (max 10 MB): " + file.name, 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    pendingAttachment = {
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      data: e.target.result,
+      size: file.size
+    };
+    showPendingAttachmentUI();
+  };
+  reader.onerror = function() {
+    showToast('Failed to read file', 'error');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPendingAttachmentUI() {
+  pendingAttachment = null;
+  if (elements.fileInput) elements.fileInput.value = '';
+  if (elements.fileChip) elements.fileChip.style.display = 'none';
+}
+
+function showPendingAttachmentUI() {
+  if (!pendingAttachment) return;
+  if (elements.fileChipName) elements.fileChipName.textContent = pendingAttachment.name;
+  if (elements.fileChipSize) elements.fileChipSize.textContent = formatFileSize(pendingAttachment.size);
+  if (elements.fileChip) elements.fileChip.style.display = 'flex';
+}
+
 // Chat session logic
 function getActiveChat() {
   return chats.find(c => c.id === currentChatId);
@@ -18,6 +248,7 @@ function getMessageCountWithoutSystem(chat) {
 }
 
 function createNewChat(initialPersona = null) {
+  clearGlobalChatSearch();
   const persona = initialPersona || settings.currentPersona;
   const systemPrompt = persona === 'custom'
     ? (settings.customSystemPrompt || '')
@@ -68,6 +299,9 @@ function selectChat(id) {
 
   elements.activeChatTitle.textContent = activeChat.title;
 
+  if (chatSearchState.visible) clearChatSearch();
+  clearPendingAttachmentUI();
+  clearGlobalChatSearch();
   renderChatFeed();
   updateInputUIState();
 
@@ -280,7 +514,21 @@ function renderChatFeed() {
 
     let htmlContent = '';
     if (isUser) {
-      htmlContent = `<p>${escapeHtml(msg.content)}</p>`;
+      let parts = [];
+      if (msg.content) {
+        parts.push(`<p>${escapeHtml(msg.content)}</p>`);
+      }
+      if (msg.attachment) {
+        const att = msg.attachment;
+        if (att.type.startsWith('image/')) {
+          parts.push(`<a href="${att.data}" target="_blank" class="attachment-image-link"><img src="${att.data}" alt="${escapeHtml(att.name)}" class="attachment-image" loading="lazy"></a>`);
+        } else {
+          const sizeStr = formatFileSize(att.size);
+          const icon = getFileIcon(att.type, att.name);
+          parts.push(`<div class="attachment-card"><div class="attachment-card-icon"><i data-lucide="${icon}" style="width:16px;height:16px;"></i></div><div class="attachment-card-info"><div class="attachment-card-name">${escapeHtml(att.name)}</div><div class="attachment-card-meta">${att.type} · ${sizeStr}</div></div><a href="${att.data}" target="_blank" class="attachment-card-download" download="${escapeHtml(att.name)}"><i data-lucide="download" style="width:12px;height:12px;"></i> Open</a></div>`);
+        }
+      }
+      htmlContent = parts.join('');
     } else {
       if (msg.isError) {
         htmlContent = `
@@ -310,6 +558,9 @@ function renderChatFeed() {
           <span class="msg-tokens">${estimateTokens(msg.content).toLocaleString()} tok</span>
           <button class="msg-action-btn" title="Copy to Clipboard" onclick="copyMessageText(this, ${idx})">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+          </button>
+          <button class="msg-action-btn" title="Branch from here" onclick="branchFromMessage(${idx})">
+            <i data-lucide="git-branch" style="width: 12px; height: 12px;"></i>
           </button>
           ${isUser ? `
             <button class="msg-action-btn" title="Edit Message" onclick="editUserMessage(${idx})">
@@ -480,6 +731,30 @@ function retryMessage(errorIndex) {
   triggerSendAPI();
 }
 
+function branchFromMessage(index) {
+  const activeChat = getActiveChat();
+  if (!activeChat) return;
+
+  const messages = activeChat.messages.slice(0, index + 1);
+  const systemMsg = messages[0]?.role === 'system' ? messages[0] : null;
+
+  const newChat = {
+    id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    title: activeChat.title + ' (branch)',
+    persona: activeChat.persona,
+    systemPrompt: systemMsg?.content || '',
+    messages: messages,
+    turnCount: messages.filter(m => m.role === 'user').length
+  };
+
+  chats.unshift(newChat);
+  currentChatId = newChat.id;
+  saveChats();
+  localStorage.setItem('opencode_current_chat_id', currentChatId);
+  renderChatList();
+  selectChat(currentChatId);
+}
+
 // Input UI State
 function updateInputUIState() {
   const activeChat = getActiveChat();
@@ -623,4 +898,106 @@ function renderMemoryPanel() {
   });
 
   lucide.createIcons();
+}
+
+// ── In-Chat Search (Ctrl+F) ──────────────────────────────────────────────────
+
+const chatSearchState = {
+  visible: false,
+  currentMatch: 0,
+  totalMatches: 0,
+  marks: []
+};
+
+function clearChatSearch() {
+  chatSearchState.marks.forEach(m => {
+    const parent = m.parentNode;
+    if (parent) parent.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  chatSearchState.marks = [];
+  chatSearchState.currentMatch = 0;
+  chatSearchState.totalMatches = 0;
+  elements.chatSearchCounter.textContent = '';
+  elements.chatSearchBar.style.display = 'none';
+  chatSearchState.visible = false;
+  document.querySelector('.search-highlight-current')?.classList.remove('search-highlight-current');
+}
+
+function performChatSearch() {
+  // Remove old marks
+  chatSearchState.marks.forEach(m => {
+    const parent = m.parentNode;
+    if (parent) parent.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  chatSearchState.marks = [];
+  document.querySelector('.search-highlight-current')?.classList.remove('search-highlight-current');
+
+  const term = elements.chatSearchInput.value.trim();
+  if (!term || term.length < 2) {
+    chatSearchState.totalMatches = 0;
+    chatSearchState.currentMatch = 0;
+    elements.chatSearchCounter.textContent = '';
+    return;
+  }
+
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'gi');
+  const contentDivs = elements.chatFeed.querySelectorAll('.msg-content');
+
+  contentDivs.forEach(div => {
+    const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(node => {
+      const text = node.textContent;
+      regex.lastIndex = 0;
+      let match;
+      const frags = [];
+      let lastIdx = 0;
+      let count = 0;
+
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIdx) frags.push(document.createTextNode(text.slice(lastIdx, match.index)));
+        const mark = document.createElement('mark');
+        mark.className = 'search-highlight';
+        mark.textContent = match[0];
+        chatSearchState.marks.push(mark);
+        frags.push(mark);
+        lastIdx = match.index + match[0].length;
+        count++;
+      }
+      if (count > 0) {
+        if (lastIdx < text.length) frags.push(document.createTextNode(text.slice(lastIdx)));
+        const parent = node.parentNode;
+        frags.forEach(f => parent.insertBefore(f, node));
+        parent.removeChild(node);
+      }
+    });
+  });
+
+  chatSearchState.totalMatches = chatSearchState.marks.length;
+  chatSearchState.currentMatch = 0;
+  if (chatSearchState.totalMatches > 0) {
+    chatSearchState.marks[0].classList.add('search-highlight-current');
+    chatSearchState.marks[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    elements.chatSearchCounter.textContent = `1 of ${chatSearchState.totalMatches}`;
+  } else {
+    elements.chatSearchCounter.textContent = 'No matches';
+  }
+}
+
+function navigateChatSearch(dir) {
+  if (chatSearchState.totalMatches === 0) return;
+  const prev = chatSearchState.marks[chatSearchState.currentMatch];
+  if (prev) prev.classList.remove('search-highlight-current');
+
+  chatSearchState.currentMatch = (chatSearchState.currentMatch + dir + chatSearchState.totalMatches) % chatSearchState.totalMatches;
+
+  const curr = chatSearchState.marks[chatSearchState.currentMatch];
+  if (curr) {
+    curr.classList.add('search-highlight-current');
+    curr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  elements.chatSearchCounter.textContent = `${chatSearchState.currentMatch + 1} of ${chatSearchState.totalMatches}`;
 }
