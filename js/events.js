@@ -60,6 +60,10 @@ function init() {
   }
   toggleShareLink();
 
+  // GitHub token is session-only — always start empty
+  githubToken = '';
+  if (elements.githubTokenInput) elements.githubTokenInput.value = '';
+
   // Connect screen: shown when no API key is set
   const connectOverlay = document.getElementById('connect-overlay');
   const connectInput = document.getElementById('connect-key-input');
@@ -225,6 +229,12 @@ function setupEventListeners() {
     saveSettings();
     toggleShareLink();
   });
+
+  if (elements.githubTokenInput) {
+    elements.githubTokenInput.addEventListener('input', (e) => {
+      githubToken = e.target.value.trim();
+    });
+  }
 
   const shareBtn = document.getElementById('gen-share-link');
   const shareOut = document.getElementById('share-link-out');

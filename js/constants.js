@@ -344,6 +344,63 @@ const AVAILABLE_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'github_get_contents',
+      description: 'Read a file or directory from a GitHub repository. Returns the file content (decoded from base64), SHA (needed for updating), size, and type. Use the SHA from this tool when calling github_create_or_update_file on an existing file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner (user or org)' },
+          repo: { type: 'string', description: 'Repository name' },
+          path: { type: 'string', description: 'File path within the repository, e.g. "README.md" or "src/main.js"' },
+          ref: { type: 'string', description: 'Optional branch name, commit SHA, or tag. Defaults to the repository\'s default branch.' }
+        },
+        required: ['owner', 'repo', 'path']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'github_create_or_update_file',
+      description: 'Create a new file or update an existing file in a GitHub repository. When updating an existing file, pass the sha from github_get_contents to avoid overwrite conflicts. The content is plain text — the tool base64-encodes it automatically.',
+      parameters: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner (user or org)' },
+          repo: { type: 'string', description: 'Repository name' },
+          path: { type: 'string', description: 'File path within the repository' },
+          content: { type: 'string', description: 'The new file content (plain text)' },
+          message: { type: 'string', description: 'Commit message' },
+          branch: { type: 'string', description: 'Branch to commit to. Auto-created from default branch if it does not exist.' },
+          sha: { type: 'string', description: 'Required when updating an existing file — the SHA of the file\'s current blob (returned by github_get_contents). Omit when creating a new file.' }
+        },
+        required: ['owner', 'repo', 'path', 'content', 'message', 'branch']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'github_create_pr',
+      description: 'Create a pull request in a GitHub repository. Returns the PR URL, number, and state.',
+      parameters: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner (user or org)' },
+          repo: { type: 'string', description: 'Repository name' },
+          title: { type: 'string', description: 'PR title' },
+          head: { type: 'string', description: 'Source branch (the branch with changes)' },
+          base: { type: 'string', description: 'Target branch (usually "main" or "master")' },
+          body: { type: 'string', description: 'Optional PR description / body text' },
+          draft: { type: 'boolean', description: 'Create as a draft PR (default: false)' }
+        },
+        required: ['owner', 'repo', 'title', 'head', 'base']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'read_rss',
       description: 'Fetch and parse an RSS or Atom feed. Use this to read news feeds, blog updates, podcast episodes, or any syndicated content. Returns a list of recent items with title, link, publication date, and summary.',
       parameters: {
@@ -381,6 +438,7 @@ const AUTO_COMPACT_THRESHOLD = 15;
 // State Variables
 let chats = [];
 let currentChatId = null;
+let githubToken = '';
 let settings = {
   proxyUrl: 'https://api.mistral.ai/v1/chat/completions',
   fetchUrl: 'https://airgap-fetch.gitub.workers.dev/',
@@ -433,6 +491,7 @@ const elements = {
   maxToolLoopsInput: document.getElementById('max-tool-loops'),
   personaSelect: document.getElementById('persona-select'),
   systemPromptTextarea: document.getElementById('system-prompt'),
+  githubTokenInput: document.getElementById('github-token'),
 
   // Main Chat UI
   activeChatTitle: document.getElementById('active-chat-title'),

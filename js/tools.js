@@ -669,6 +669,62 @@ async function executeToolCall(toolCall) {
     }
   }
 
+  if (name === 'github_get_contents') {
+    if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
+    if (typeof Octokit === 'undefined') return { error: 'GitHub API library not loaded. Please refresh the page.' };
+    try {
+      const octokit = new Octokit({ auth: githubToken });
+      const response = await octokit.rest.repos.getContent({
+        owner: args.owner, repo: args.repo, path: args.path,
+        ...(args.ref ? { ref: args.ref } : {})
+      });
+      const data = response.data;
+      let content = '';
+      if (data.type === 'file' && data.content) {
+        content = decodeURIComponent(escape(atob(data.content)));
+      }
+      return { sha: data.sha, content, size: data.size, encoding: data.encoding, html_url: data.html_url, path: data.path, type: data.type, name: data.name };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  if (name === 'github_create_or_update_file') {
+    if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
+    if (typeof Octokit === 'undefined') return { error: 'GitHub API library not loaded. Please refresh the page.' };
+    try {
+      const octokit = new Octokit({ auth: githubToken });
+      const encoded = btoa(unescape(encodeURIComponent(args.content)));
+      const response = await octokit.rest.repos.createOrUpdateFileContents({
+        owner: args.owner, repo: args.repo, path: args.path,
+        message: args.message, content: encoded, branch: args.branch,
+        ...(args.sha ? { sha: args.sha } : {})
+      });
+      const data = response.data;
+      return { content: { html_url: data.content.html_url }, commit: { sha: data.commit.sha, html_url: data.commit.html_url } };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  if (name === 'github_create_pr') {
+    if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
+    if (typeof Octokit === 'undefined') return { error: 'GitHub API library not loaded. Please refresh the page.' };
+    try {
+      const octokit = new Octokit({ auth: githubToken });
+      const response = await octokit.rest.pulls.create({
+        owner: args.owner, repo: args.repo, title: args.title,
+        head: args.head, base: args.base,
+        ...(args.body ? { body: args.body } : {}),
+        ...(args.draft ? { draft: true } : {})
+      });
+      const data = response.data;
+      return { html_url: data.html_url, number: data.number, state: data.state, title: data.title };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
   return { error: `Unknown tool: ${name}` };
 }
 
@@ -778,6 +834,45 @@ function appendToolCallUI(toolCall) {
           <i data-lucide="rss" style="width: 14px; height: 14px; vertical-align: middle;"></i>
           <span class="tool-call-label">Reading feed:</span>
           <code class="tool-call-url">${escapeHtml(url)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_get_contents') {
+    let path = '';
+    try { path = JSON.parse(argsRaw).path || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="github" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Reading from GitHub:</span>
+          <code class="tool-call-url">${escapeHtml(path)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_or_update_file') {
+    let path = '';
+    try { path = JSON.parse(argsRaw).path || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="git-commit" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Committing to GitHub:</span>
+          <code class="tool-call-url">${escapeHtml(path)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_pr') {
+    let title = '';
+    try { title = JSON.parse(argsRaw).title || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="git-pull-request" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Creating PR:</span>
+          <code class="tool-call-url">${escapeHtml(title)}</code>
           <span class="tool-call-status">...</span>
         </div>
       </div>
@@ -953,6 +1048,39 @@ function updateToolCallUI(toolCall, result) {
           <span class="tool-call-label">Feed read:</span>
           <code class="tool-call-url">${escapeHtml(feedTitle)}</code>
           <span class="tool-call-detail">(${result.count || 0} items)</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_get_contents') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Read:</span>
+          <code class="tool-call-url">${escapeHtml(result.path)}</code>
+          <span class="tool-call-detail">(${result.size} bytes, ${result.type})</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_or_update_file') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Committed:</span>
+          <code class="tool-call-url">${escapeHtml(result.commit.sha.slice(0, 7))}</code>
+          <span class="tool-call-detail"><a href="${escapeHtml(result.content.html_url)}" target="_blank" rel="noopener">view file</a></span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_pr') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">PR created:</span>
+          <code class="tool-call-url">#${result.number}</code>
+          <span class="tool-call-detail"><a href="${escapeHtml(result.html_url)}" target="_blank" rel="noopener">open</a></span>
         </div>
       </div>
     `;

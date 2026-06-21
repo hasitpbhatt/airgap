@@ -40,6 +40,56 @@ async function mockCdn(page) {
     });
   });
 
+  await page.route('**/cdn.jsdelivr.net/npm/@octokit/**', async (route) => {
+    return route.fulfill({
+      contentType: 'application/javascript',
+      body: `
+window.Octokit = class Octokit {
+  constructor(opts) {
+    this.auth = opts && opts.auth;
+    this.rest = { repos: {}, pulls: {} };
+    var self = this;
+    this.rest.repos.getContent = async function(args) {
+      var url = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + args.path;
+      if (args.ref) url += '?ref=' + encodeURIComponent(args.ref);
+      var res = await fetch(url, { headers: { Authorization: 'Bearer ' + (self.auth || '') } });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+      return { data: data };
+    };
+    this.rest.repos.createOrUpdateFileContents = async function(args) {
+      var url = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + args.path;
+      var body = { message: args.message, content: args.content, branch: args.branch };
+      if (args.sha) body.sha = args.sha;
+      var res = await fetch(url, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + (self.auth || ''), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+      return { data: data };
+    };
+    this.rest.pulls.create = async function(args) {
+      var url = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/pulls';
+      var body = { title: args.title, head: args.head, base: args.base };
+      if (args.body) body.body = args.body;
+      if (args.draft) body.draft = true;
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + (self.auth || ''), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+      return { data: data };
+    };
+  }
+};
+      `.trim(),
+    });
+  });
+
   await page.route('**/fonts.googleapis.com/**', (route) => route.abort());
   await page.route('**/fonts.gstatic.com/**', (route) => route.abort());
   await page.route('**/googleapis.com/**', (route) => route.abort());

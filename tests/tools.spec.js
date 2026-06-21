@@ -539,3 +539,163 @@ test.describe('Tool execution — unknown tool', () => {
     expect(r.error).toContain('Invalid tool arguments');
   });
 });
+
+test.describe('Tool execution — github tools', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api.github.com/**', async (route) => {
+      const url = route.request().url();
+      const method = route.request().method();
+      const owner = 'testuser';
+      const repo = 'testrepo';
+
+      if (url.includes('/contents/') && method === 'GET') {
+        if (url.includes('README.md')) {
+          return route.fulfill({
+            contentType: 'application/json',
+            body: JSON.stringify({
+              name: 'README.md',
+              path: 'README.md',
+              sha: 'abc123def456',
+              size: 42,
+              encoding: 'base64',
+              type: 'file',
+              content: Buffer.from('# Hello World').toString('base64'),
+              html_url: 'https://github.com/testuser/testrepo/blob/main/README.md'
+            }),
+          });
+        }
+        if (url.includes('nonexistent.md')) {
+          return route.fulfill({
+            status: 404,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Not Found' }),
+          });
+        }
+      }
+
+      if (url.includes('/contents/') && method === 'PUT') {
+        const body = JSON.parse(route.request().postData() || '{}');
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            content: {
+              html_url: 'https://github.com/testuser/testrepo/blob/main/newfile.md'
+            },
+            commit: {
+              sha: 'newcommit123',
+              html_url: 'https://github.com/testuser/testrepo/commit/newcommit123'
+            }
+          }),
+        });
+      }
+
+      if (url.includes('/pulls') && method === 'POST') {
+        const body = JSON.parse(route.request().postData() || '{}');
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            html_url: 'https://github.com/testuser/testrepo/pull/1',
+            number: 1,
+            state: 'open',
+            title: body.title || 'Test PR'
+          }),
+        });
+      }
+
+      return route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Not Found' }),
+      });
+    });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+  });
+
+  test('github_get_contents reads a file successfully', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_get_contents', arguments: '{"owner":"testuser","repo":"testrepo","path":"README.md"}' }
+      });
+    });
+    expect(r.sha).toBe('abc123def456');
+    expect(r.content).toBe('# Hello World');
+    expect(r.type).toBe('file');
+    expect(r.path).toBe('README.md');
+  });
+
+  test('github_get_contents returns error for missing file', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_get_contents', arguments: '{"owner":"testuser","repo":"testrepo","path":"nonexistent.md"}' }
+      });
+    });
+    expect(r.error).toContain('Not Found');
+  });
+
+  test('github_get_contents returns error when token is missing', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = '';
+      return await executeToolCall({
+        function: { name: 'github_get_contents', arguments: '{"owner":"testuser","repo":"testrepo","path":"README.md"}' }
+      });
+    });
+    expect(r.error).toContain('GitHub token not configured');
+  });
+
+  test('github_create_or_update_file creates a new file', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_or_update_file', arguments: '{"owner":"testuser","repo":"testrepo","path":"newfile.md","content":"# New File","message":"Add newfile","branch":"main"}' }
+      });
+    });
+    expect(r.commit.sha).toBe('newcommit123');
+    expect(r.content.html_url).toContain('github.com');
+  });
+
+  test('github_create_or_update_file updates existing file with sha', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_or_update_file', arguments: '{"owner":"testuser","repo":"testrepo","path":"README.md","content":"# Updated","message":"Update README","branch":"main","sha":"abc123def456"}' }
+      });
+    });
+    expect(r.commit.sha).toBe('newcommit123');
+  });
+
+  test('github_create_pr creates a pull request', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_pr', arguments: '{"owner":"testuser","repo":"testrepo","title":"My PR","head":"feature","base":"main"}' }
+      });
+    });
+    expect(r.number).toBe(1);
+    expect(r.state).toBe('open');
+    expect(r.html_url).toContain('github.com');
+  });
+
+  test('github_create_pr creates a draft PR', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_pr', arguments: '{"owner":"testuser","repo":"testrepo","title":"Draft PR","head":"feature","base":"main","draft":true}' }
+      });
+    });
+    expect(r.number).toBe(1);
+    expect(r.state).toBe('open');
+  });
+
+  test('github_create_pr returns error when token is missing', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = '';
+      return await executeToolCall({
+        function: { name: 'github_create_pr', arguments: '{"owner":"testuser","repo":"testrepo","title":"No Token","head":"feature","base":"main"}' }
+      });
+    });
+    expect(r.error).toContain('GitHub token not configured');
+  });
+});

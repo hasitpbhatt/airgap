@@ -32,6 +32,9 @@
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Octokit (GitHub REST API) -->
+  <script src="https://cdn.jsdelivr.net/npm/@octokit/rest/dist/octokit-rest.min.js"></script>
   
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
@@ -173,6 +176,12 @@
             <label for="api-key">API Key (Optional)</label>
             <input type="password" id="api-key" class="setting-input" placeholder="Bearer Token (masked)">
           </div>
+          <div class="setting-group">
+            <label for="github-token">GitHub Token (Session Only)</label>
+            <input type="password" id="github-token" class="setting-input" placeholder="ghp_... (session only — not stored)">
+            <p style="margin:0.25rem 0 0;font-size:0.6rem;color:hsl(var(--danger));line-height:1.3">Session only — never saved to disk. Lost on page reload. Requires <code>repo</code> scope.</p>
+          </div>
+
           <div class="setting-group" id="share-link-group" style="display:none">
             <button id="gen-share-link" class="setting-btn" style="font-size:0.75rem;padding:0.3rem 0.6rem">
               Share link with credential
