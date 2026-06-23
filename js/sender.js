@@ -167,7 +167,8 @@ async function triggerSendAPI() {
 
     // Inject tool call budget guidance into system prompt (in-memory only, not persisted)
     const toolBudget = settings.useMaxToolLoops ? settings.maxToolLoops : MAX_TOOL_LOOP;
-    const toolCallHint = '\n\nYou have a budget of ' + toolBudget + ' tool call rounds per request. Prioritize the most impactful tool first. If a tool errors, try an alternative or ask the user — do not retry the same operation. Once you have enough information, provide your final answer rather than continuing to call tools.';
+    const toolCallHint = '\n\nYou have a budget of ' + toolBudget + ' tool call rounds per request. Prioritize the most impactful tool first. If a tool errors, try an alternative or ask the user — do not retry the same operation. Once you have enough information, provide your final answer rather than continuing to call tools.' +
+  '\n\nGitHub API tools (github_get_contents, github_create_or_update_file, github_create_pr, github_create_issue) are available and the user has already configured a GitHub token in Settings — you can use them without asking for credentials.';
     if (messages.length > 0 && messages[0].role === 'system') {
       messages[0] = { ...messages[0], content: messages[0].content + toolCallHint };
     }
