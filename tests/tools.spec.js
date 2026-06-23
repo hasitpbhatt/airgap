@@ -602,6 +602,19 @@ test.describe('Tool execution — github tools', () => {
         });
       }
 
+      if (url.includes('/issues') && method === 'POST') {
+        const body = JSON.parse(route.request().postData() || '{}');
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            html_url: 'https://github.com/testuser/testrepo/issues/42',
+            number: 42,
+            state: 'open',
+            title: body.title || 'Test Issue'
+          }),
+        });
+      }
+
       return route.fulfill({
         status: 404,
         contentType: 'application/json',
@@ -694,6 +707,39 @@ test.describe('Tool execution — github tools', () => {
       githubToken = '';
       return await executeToolCall({
         function: { name: 'github_create_pr', arguments: '{"owner":"testuser","repo":"testrepo","title":"No Token","head":"feature","base":"main"}' }
+      });
+    });
+    expect(r.error).toContain('GitHub token not configured');
+  });
+
+  test('github_create_issue creates an issue successfully', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_issue', arguments: '{"owner":"testuser","repo":"testrepo","title":"Found a bug","body":"The button does nothing","labels":["bug","urgent"]}' }
+      });
+    });
+    expect(r.number).toBe(42);
+    expect(r.state).toBe('open');
+    expect(r.html_url).toContain('github.com');
+  });
+
+  test('github_create_issue creates issue with minimal args', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = 'test-token';
+      return await executeToolCall({
+        function: { name: 'github_create_issue', arguments: '{"owner":"testuser","repo":"testrepo","title":"Simple issue"}' }
+      });
+    });
+    expect(r.number).toBe(42);
+    expect(r.title).toBe('Simple issue');
+  });
+
+  test('github_create_issue returns error when token is missing', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      githubToken = '';
+      return await executeToolCall({
+        function: { name: 'github_create_issue', arguments: '{"owner":"testuser","repo":"testrepo","title":"No token"}' }
       });
     });
     expect(r.error).toContain('GitHub token not configured');

@@ -47,7 +47,7 @@ async function mockCdn(page) {
 window.Octokit = class Octokit {
   constructor(opts) {
     this.auth = opts && opts.auth;
-    this.rest = { repos: {}, pulls: {} };
+    this.rest = { repos: {}, pulls: {}, issues: {} };
     var self = this;
     this.rest.repos.getContent = async function(args) {
       var url = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + args.path;
@@ -75,6 +75,21 @@ window.Octokit = class Octokit {
       var body = { title: args.title, head: args.head, base: args.base };
       if (args.body) body.body = args.body;
       if (args.draft) body.draft = true;
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + (self.auth || ''), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+      return { data: data };
+    };
+    this.rest.issues.create = async function(args) {
+      var url = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/issues';
+      var body = { title: args.title };
+      if (args.body) body.body = args.body;
+      if (args.labels) body.labels = args.labels;
+      if (args.assignees) body.assignees = args.assignees;
       var res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + (self.auth || ''), 'Content-Type': 'application/json' },

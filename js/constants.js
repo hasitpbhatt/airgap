@@ -401,6 +401,25 @@ const AVAILABLE_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'github_create_issue',
+      description: 'Create an issue in a GitHub repository. Returns the issue URL and number.',
+      parameters: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner (user or org)' },
+          repo: { type: 'string', description: 'Repository name' },
+          title: { type: 'string', description: 'Issue title' },
+          body: { type: 'string', description: 'Optional issue body / description' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Optional labels to apply' },
+          assignees: { type: 'array', items: { type: 'string' }, description: 'Optional usernames to assign' }
+        },
+        required: ['owner', 'repo', 'title']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'read_rss',
       description: 'Fetch and parse an RSS or Atom feed. Use this to read news feeds, blog updates, podcast episodes, or any syndicated content. Returns a list of recent items with title, link, publication date, and summary.',
       parameters: {

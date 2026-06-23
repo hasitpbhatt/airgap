@@ -725,6 +725,24 @@ async function executeToolCall(toolCall) {
     }
   }
 
+  if (name === 'github_create_issue') {
+    if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
+    if (typeof Octokit === 'undefined') return { error: 'GitHub API library not loaded. Please refresh the page.' };
+    try {
+      const octokit = new Octokit({ auth: githubToken });
+      const response = await octokit.rest.issues.create({
+        owner: args.owner, repo: args.repo, title: args.title,
+        ...(args.body ? { body: args.body } : {}),
+        ...(args.labels ? { labels: args.labels } : {}),
+        ...(args.assignees ? { assignees: args.assignees } : {})
+      });
+      const data = response.data;
+      return { html_url: data.html_url, number: data.number, state: data.state, title: data.title };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
   return { error: `Unknown tool: ${name}` };
 }
 
@@ -872,6 +890,19 @@ function appendToolCallUI(toolCall) {
         <div class="msg-content">
           <i data-lucide="git-pull-request" style="width: 14px; height: 14px; vertical-align: middle;"></i>
           <span class="tool-call-label">Creating PR:</span>
+          <code class="tool-call-url">${escapeHtml(title)}</code>
+          <span class="tool-call-status">...</span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_issue') {
+    let title = '';
+    try { title = JSON.parse(argsRaw).title || ''; } catch {}
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble">
+        <div class="msg-content">
+          <i data-lucide="circle-alert" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <span class="tool-call-label">Creating issue:</span>
           <code class="tool-call-url">${escapeHtml(title)}</code>
           <span class="tool-call-status">...</span>
         </div>
@@ -1079,6 +1110,17 @@ function updateToolCallUI(toolCall, result) {
         <div class="msg-content">
           <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
           <span class="tool-call-label">PR created:</span>
+          <code class="tool-call-url">#${result.number}</code>
+          <span class="tool-call-detail"><a href="${escapeHtml(result.html_url)}" target="_blank" rel="noopener">open</a></span>
+        </div>
+      </div>
+    `;
+  } else if (name === 'github_create_issue') {
+    row.innerHTML = `
+      <div class="message-bubble tool-call-bubble tool-call-done">
+        <div class="msg-content">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle; color: hsl(var(--success));"></i>
+          <span class="tool-call-label">Issue created:</span>
           <code class="tool-call-url">#${result.number}</code>
           <span class="tool-call-detail"><a href="${escapeHtml(result.html_url)}" target="_blank" rel="noopener">open</a></span>
         </div>
