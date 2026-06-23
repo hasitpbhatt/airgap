@@ -347,7 +347,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'github_get_contents',
-      description: 'Read a file or directory from a GitHub repository. Returns the file content (decoded from base64), SHA (needed for updating), size, and type. Use the SHA from this tool when calling github_create_or_update_file on an existing file.',
+      description: 'Read a file or directory from a GitHub repository. Returns the file content (decoded from base64), SHA (needed for updating), size, and type. Use the SHA from this tool when calling github_create_or_update_file on an existing file. The user has already configured a GitHub token in Settings — authentication is handled automatically.',
       parameters: {
         type: 'object',
         properties: {
@@ -366,7 +366,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'github_create_or_update_file',
-      description: 'Create a new file or update an existing file in a GitHub repository. When updating an existing file, pass the sha from github_get_contents to avoid overwrite conflicts. The content is plain text — the tool base64-encodes it automatically.',
+      description: 'Create a new file or update an existing file in a GitHub repository. When updating an existing file, pass the sha from github_get_contents to avoid overwrite conflicts. The content is plain text — the tool base64-encodes it automatically. The branch parameter is auto-created if it doesn't exist. The user has already configured a GitHub token in Settings. Use this together with github_get_contents and github_create_pr for a complete commit-and-PR workflow.',
       parameters: {
         type: 'object',
         properties: {
@@ -386,7 +386,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'github_create_pr',
-      description: 'Create a pull request in a GitHub repository. Returns the PR URL, number, and state.',
+      description: 'Create a pull request in a GitHub repository. The user has already configured a GitHub token in Settings — authentication is handled automatically. Use after github_create_or_update_file to create a PR for your committed changes. Returns the PR URL, number, and state.',
       parameters: {
         type: 'object',
         properties: {
@@ -406,7 +406,7 @@ const AVAILABLE_TOOLS = [
     type: 'function',
     function: {
       name: 'github_create_issue',
-      description: 'Create an issue in a GitHub repository. Returns the issue URL and number.',
+      description: 'Create an issue in a GitHub repository. The user has already configured a GitHub token in Settings — authentication is handled automatically. Returns the issue URL and number.',
       parameters: {
         type: 'object',
         properties: {
