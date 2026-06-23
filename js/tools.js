@@ -90,6 +90,13 @@ async function executeToolCall(toolCall) {
           } catch {}
           data.stored_key = '_fetched_' + encodeURIComponent(args.url);
         }
+        // Apply optional offset/limit for partial reads
+        if (data.content && (args.offset || args.limit)) {
+          var contentOffset = Math.max(0, args.offset || 0);
+          var totalLen = data.content.length;
+          data.content = data.content.slice(contentOffset, args.limit > 0 ? contentOffset + args.limit : undefined);
+          data.range = { offset: contentOffset, count: data.content.length, total: totalLen };
+        }
         return { ...data, cached: false };
       } catch (err) {
         lastErr = err.message;
@@ -683,7 +690,17 @@ async function executeToolCall(toolCall) {
       if (data.type === 'file' && data.content) {
         content = decodeURIComponent(escape(atob(data.content)));
       }
-      return { sha: data.sha, content, size: data.size, encoding: data.encoding, html_url: data.html_url, path: data.path, type: data.type, name: data.name };
+      // Apply optional offset/limit for partial reads
+      if (content && (args.offset || args.limit)) {
+        var ghOffset = Math.max(0, args.offset || 0);
+        var ghTotal = content.length;
+        content = content.slice(ghOffset, args.limit > 0 ? ghOffset + args.limit : undefined);
+      }
+      var ghResult = { sha: data.sha, content, size: data.size, encoding: data.encoding, html_url: data.html_url, path: data.path, type: data.type, name: data.name };
+      if (content && (args.offset || args.limit)) {
+        ghResult.range = { offset: ghOffset, count: content.length, total: ghTotal };
+      }
+      return ghResult;
     } catch (err) {
       return { error: err.message };
     }

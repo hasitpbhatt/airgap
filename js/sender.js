@@ -180,6 +180,8 @@ async function triggerSendAPI() {
         headers['Authorization'] = `Bearer ${settings.apiKey}`;
       }
 
+      trimMessagesToFit(messages);
+
       const body = {
         model: settings.modelName || 'mistral-small-latest',
         stream: true,
@@ -288,6 +290,11 @@ async function triggerSendAPI() {
           if (tc.function.name === 'compact') {
             wasCompacted = true;
           } else {
+            if (result && result.content && typeof result.content === 'string' && result.content.length > MAX_TOOL_RESULT_CHARS) {
+              result = Object.assign({}, result, {
+                content: result.content.slice(0, MAX_TOOL_RESULT_CHARS) + '\n\n[... content truncated at ' + MAX_TOOL_RESULT_CHARS + ' chars (original was ' + result.content.length + ' chars). To read the rest, call again with the same url/path and offset=' + MAX_TOOL_RESULT_CHARS + ' (or add limit=N for chunk size). ...]'
+              });
+            }
             messages.push({
               role: 'tool',
               tool_call_id: tc.id,
@@ -499,6 +506,43 @@ async function triggerCompact() {
     setGeneratingState(false);
     abortController = null;
     updateInputUIState();
+  }
+}
+
+function trimMessagesToFit(messages) {
+  var limit = getContextLimit();
+  var maxTokens = Math.floor(limit * CONTEXT_WINDOW_MARGIN);
+  var totalTokens = 0;
+  for (var i = 0; i < messages.length; i++) {
+    totalTokens += estimateTokens(messages[i].content || '');
+  }
+  if (totalTokens <= maxTokens) return;
+
+  // Pass 1: truncate largest tool messages by 50% until under budget
+  var toolIndices = [];
+  for (var i = 0; i < messages.length; i++) {
+    if (messages[i].role === 'tool' && messages[i].content) {
+      toolIndices.push(i);
+    }
+  }
+  toolIndices.sort(function(a, b) { return (messages[b].content || '').length - (messages[a].content || '').length; });
+
+  for (var t = 0; t < toolIndices.length && totalTokens > maxTokens; t++) {
+    var idx = toolIndices[t];
+    var origLen = messages[idx].content.length;
+    messages[idx].content = messages[idx].content.slice(0, Math.floor(origLen / 2)) + '\n\n[... truncated ...]';
+    totalTokens = 0;
+    for (var i = 0; i < messages.length; i++) {
+      totalTokens += estimateTokens(messages[i].content || '');
+    }
+  }
+
+  // Pass 2: drop oldest non-system messages
+  while (messages.length > 2 && totalTokens > maxTokens) {
+    var removed = messages.splice(1, 1)[0];
+    if (removed) {
+      totalTokens -= estimateTokens(removed.content || '');
+    }
   }
 }
 

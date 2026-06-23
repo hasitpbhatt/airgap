@@ -42,7 +42,9 @@ const AVAILABLE_TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          url: { type: 'string', description: 'The complete URL (including protocol, e.g. https://) to fetch' }
+          url: { type: 'string', description: 'The complete URL (including protocol, e.g. https://) to fetch' },
+          offset: { type: 'number', description: 'Optional character offset to start reading from. Use with limit to read large content in chunks.' },
+          limit: { type: 'number', description: 'Optional max characters to return. Omit to get content from offset to end.' }
         },
         required: ['url']
       }
@@ -352,7 +354,9 @@ const AVAILABLE_TOOLS = [
           owner: { type: 'string', description: 'Repository owner (user or org)' },
           repo: { type: 'string', description: 'Repository name' },
           path: { type: 'string', description: 'File path within the repository, e.g. "README.md" or "src/main.js"' },
-          ref: { type: 'string', description: 'Optional branch name, commit SHA, or tag. Defaults to the repository\'s default branch.' }
+          ref: { type: 'string', description: 'Optional branch name, commit SHA, or tag. Defaults to the repository\'s default branch.' },
+          offset: { type: 'number', description: 'Optional character offset to start reading from. Use with limit to read large files in chunks.' },
+          limit: { type: 'number', description: 'Optional max characters to return. Omit to get content from offset to end.' }
         },
         required: ['owner', 'repo', 'path']
       }
@@ -453,6 +457,8 @@ const MODEL_PRICING = {
 const MAX_TOOL_LOOP = 5;
 const MAX_TOOL_LOOP_RESUME = 5;
 const AUTO_COMPACT_THRESHOLD = 15;
+const MAX_TOOL_RESULT_CHARS = 12000;
+const CONTEXT_WINDOW_MARGIN = 0.85;
 
 // State Variables
 let chats = [];
