@@ -1,7 +1,7 @@
 async function handleGitHubGetContents(args) {
   if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
   try {
-    var ghUrl = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + args.path;
+    var ghUrl = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + encodeURIComponent(args.path);
     if (args.ref) ghUrl += '?ref=' + encodeURIComponent(args.ref);
     var ghRes = await fetch(ghUrl, { headers: { Authorization: 'Bearer ' + githubToken } });
     var ghData = await ghRes.json();
@@ -21,6 +21,7 @@ async function handleGitHubGetContents(args) {
     }
     return ghResult;
   } catch (err) {
+    console.warn('GitHub GET contents failed, returning error object', err);
     return { error: err.message };
   }
 }
@@ -28,7 +29,7 @@ async function handleGitHubGetContents(args) {
 async function handleGitHubCreateOrUpdateFile(args) {
   if (!githubToken) return { error: 'GitHub token not configured. Add one in Settings.' };
   try {
-    var ghUrl = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + args.path;
+    var ghUrl = 'https://api.github.com/repos/' + args.owner + '/' + args.repo + '/contents/' + encodeURIComponent(args.path);
     var ghBody = { message: args.message, content: btoa(unescape(encodeURIComponent(args.content))), branch: args.branch };
     if (args.sha) ghBody.sha = args.sha;
     var ghRes = await fetch(ghUrl, {
@@ -40,6 +41,7 @@ async function handleGitHubCreateOrUpdateFile(args) {
     if (!ghRes.ok) return { error: ghData.message || 'HTTP ' + ghRes.status };
     return { content: { html_url: ghData.content.html_url }, commit: { sha: ghData.commit.sha, html_url: ghData.commit.html_url } };
   } catch (err) {
+    console.warn('GitHub create/update file failed, returning error object', err);
     return { error: err.message };
   }
 }

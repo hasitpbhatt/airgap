@@ -51,7 +51,7 @@ function xorHexDecode(hex) {
   const _k = '_x4';
   let dec = '';
   for (let i = 0; i < hex.length; i += 2) {
-    dec += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ _k.charCodeAt((i / 2) % _k.length));
+    dec += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16) ^ _k.charCodeAt((i / 2) % _k.length));
   }
   return dec;
 }
