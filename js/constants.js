@@ -458,7 +458,7 @@ const MAX_TOOL_LOOP = 5;
 const MAX_TOOL_LOOP_RESUME = 5;
 const AUTO_COMPACT_THRESHOLD = 15;
 const MAX_TOOL_RESULT_CHARS = 12000;
-const CONTEXT_WINDOW_MARGIN = 0.85;
+var CONTEXT_WINDOW_MARGIN = 0.85;
 
 // State Variables
 let chats = [];
