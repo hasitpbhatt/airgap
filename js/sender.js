@@ -479,83 +479,106 @@ async function triggerSendLocal() {
   abortController = new AbortController();
 
   try {
-    const gen = window.__localEngine.chatCompletion(messages, localTools.length > 0 ? localTools : undefined);
-    let streamContent = '';
-    let hasToolCalls = false;
+    let toolDepth = 0;
+    const effectiveLimit = MAX_TOOL_LOOP;
 
-    for await (const result of gen) {
-      if (abortController.signal.aborted) break;
+    while (toolDepth < effectiveLimit) {
+      const gen = window.__localEngine.chatCompletion(messages, localTools.length > 0 ? localTools : undefined);
+      let streamContent = '';
+      let hasToolCalls = false;
 
-      if (result.type === 'delta') {
-        streamContent = result.fullText;
-        const loadingBubble = document.getElementById('temp-loading-bubble');
-        if (loadingBubble) {
-          const msgContent = loadingBubble.querySelector('.msg-content');
-          if (msgContent) msgContent.innerHTML = mdToHtml(streamContent);
-        }
-      } else if (result.type === 'tool_calls') {
-        hasToolCalls = true;
-        const bubble = document.getElementById('temp-loading-bubble');
-        if (bubble) bubble.remove();
+      for await (const result of gen) {
+        if (abortController.signal.aborted) break;
 
-        for (const tc of result.toolCalls) {
-          const tcObj = {
-            id: 'local_' + Date.now(),
-            type: 'function',
-            function: {
-              name: tc.name,
-              arguments: tc.arguments || '{}'
-            }
-          };
-          appendToolCallUI(tcObj);
-          const toolResult = await executeToolCall(tcObj);
-          updateToolCallUI(tcObj, toolResult);
-          messages.push({
-            role: 'assistant',
-            content: null,
-            tool_calls: [tcObj]
-          });
-          messages.push({
-            role: 'tool',
-            tool_call_id: tcObj.id,
-            content: JSON.stringify(toolResult)
-          });
-        }
+        if (result.type === 'delta') {
+          streamContent = result.fullText;
+          const loadingBubble = document.getElementById('temp-loading-bubble');
+          if (loadingBubble) {
+            const msgContent = loadingBubble.querySelector('.msg-content');
+            if (msgContent) msgContent.innerHTML = mdToHtml(streamContent);
+          }
+        } else if (result.type === 'tool_calls') {
+          hasToolCalls = true;
+          const bubble = document.getElementById('temp-loading-bubble');
+          if (bubble) bubble.remove();
 
-        // Create new loading bubble for next streaming pass
-        const nextRow = document.createElement('div');
-        nextRow.className = 'message-row assistant';
-        nextRow.id = 'temp-loading-bubble';
-        nextRow.innerHTML = `
-          <div class="message-bubble">
-            <div class="msg-header assistant">
-              ${PERSONAS[activeChat.persona]?.icon || '🤖'} ${PERSONAS[activeChat.persona]?.label || 'Assistant'}
-            </div>
-            <div class="msg-content">
-              <div class="typing-indicator">
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
+          for (const tc of result.toolCalls) {
+            const tcObj = {
+              id: 'local_' + Date.now(),
+              type: 'function',
+              function: {
+                name: tc.name,
+                arguments: tc.arguments || '{}'
+              }
+            };
+            appendToolCallUI(tcObj);
+            const toolResult = await executeToolCall(tcObj);
+            updateToolCallUI(tcObj, toolResult);
+            messages.push({
+              role: 'assistant',
+              content: null,
+              tool_calls: [tcObj]
+            });
+            messages.push({
+              role: 'tool',
+              tool_call_id: tcObj.id,
+              content: JSON.stringify(toolResult)
+            });
+          }
+
+          // Create new loading bubble for next streaming pass
+          const nextRow = document.createElement('div');
+          nextRow.className = 'message-row assistant';
+          nextRow.id = 'temp-loading-bubble';
+          nextRow.innerHTML = `
+            <div class="message-bubble">
+              <div class="msg-header assistant">
+                ${PERSONAS[activeChat.persona]?.icon || '🤖'} ${PERSONAS[activeChat.persona]?.label || 'Assistant'}
+              </div>
+              <div class="msg-content">
+                <div class="typing-indicator">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                </div>
               </div>
             </div>
-          </div>
-        `;
-        elements.chatFeed.appendChild(nextRow);
-        tryAutoScroll();
+          `;
+          elements.chatFeed.appendChild(nextRow);
+          tryAutoScroll();
+        }
       }
+
+      if (abortController.signal.aborted) break;
+
+      if (hasToolCalls) {
+        toolDepth++;
+        continue;
+      }
+
+      const bubble = document.getElementById('temp-loading-bubble');
+      if (bubble) bubble.remove();
+
+      if (streamContent) {
+        activeChat.messages.push({ role: 'assistant', content: streamContent });
+        activeChat.turnCount++;
+        saveChats();
+      }
+
+      renderChatFeed();
+      return;
     }
 
-    if (hasToolCalls) return;
-
+    // Hit max tool loop limit
     const bubble = document.getElementById('temp-loading-bubble');
     if (bubble) bubble.remove();
 
-    if (streamContent) {
-      activeChat.messages.push({ role: 'assistant', content: streamContent });
-      activeChat.turnCount++;
-      saveChats();
-    }
-
+    activeChat.messages.push({
+      role: 'assistant',
+      content: 'I reached my tool call limit (' + effectiveLimit + ' rounds) without producing a final answer. Please try a simpler request or ask differently.',
+      isTruncated: true
+    });
+    saveChats();
     renderChatFeed();
   } catch (err) {
     const bubble = document.getElementById('temp-loading-bubble');
