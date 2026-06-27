@@ -67,9 +67,20 @@ async function loadModel(modelKey, onProgress) {
       if (onProgress) onProgress({ phase: 'download', progress: 0, text: 'Initializing WebLLM...' });
 
       const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
-      if (onProgress) onProgress({ phase: 'download', progress: 0.1, text: 'Downloading model weights...' });
+      if (onProgress) onProgress({ phase: 'download', progress: 0.1, text: 'Loading local model configuration...' });
+
+      const appConfig = {
+        model_list: [
+          {
+            model: 'https://huggingface.co/mlc-ai/' + config.webllm,
+            model_id: config.webllm,
+            model_lib: config.webllm + '-webgpu.wasm'
+          }
+        ]
+      };
 
       engineInstance = await CreateMLCEngine(config.webllm, {
+        appConfig: appConfig,
         initProgressCallback: (report) => {
           if (onProgress && report.text) {
             const pct = report.progress || 0;
