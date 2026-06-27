@@ -438,12 +438,26 @@ const AVAILABLE_TOOLS = [
   }
 ];
 
+const LOCAL_TOOLS = new Set([
+  'fetch_url',
+  'search_web',
+  'calculate',
+  'get_current_time',
+  'read_value',
+  'list_stored_keys',
+  'notes_read',
+  'notes_list'
+]);
+
 const CONTEXT_LIMITS = {
   'mistral-small-latest': 32768,
   'mistral-medium-latest': 32768,
   'mistral-large-latest': 32768,
   'codestral-latest': 32768,
   'ministral-14b-2512': 32768,
+  'voxtral-tts-latest': 32768,
+  'qwen2.5-0.5b': 2048,
+  'qwen2.5-1.5b': 4096,
 };
 
 const MODEL_PRICING = {
@@ -452,6 +466,7 @@ const MODEL_PRICING = {
   'mistral-large-latest':   { input: 0.003,  output: 0.009 },
   'codestral-latest':       { input: 0.001,  output: 0.003 },
   'ministral-14b-2512':     { input: 0.0002, output: 0.0006 },
+  'voxtral-tts-latest':     { input: 0.0001, output: 0.0003 },
 };
 
 const MAX_TOOL_LOOP = 5;
@@ -471,13 +486,23 @@ let settings = {
   apiKey: '',
   injectedKey: false,
   modelName: 'mistral-small-latest',
+  ttsModelName: 'voxtral-mini-tts-2603',
   useMaxTurns: false,
   maxTurns: 5,
   useMaxToolLoops: true,
   maxToolLoops: 5,
   currentPersona: 'general',
   customSystemPrompt: '',
-  customTools: []
+  customTools: [],
+  ttsEnabled: false,
+  ttsVoice: 'default',
+  ttsRate: 1.0,
+  ttsPitch: 1.0,
+  ttsProxyUrl: '',
+  engine: 'remote',
+  localModelName: 'qwen2.5-0.5b',
+  localModelLoaded: false,
+  localModelLoading: false
 };
 let abortController = null;
 let isGenerating = false;
@@ -570,7 +595,32 @@ const elements = {
   fileChipName: document.getElementById('file-chip-name'),
   fileChipSize: document.getElementById('file-chip-size'),
   fileChipRemove: document.getElementById('file-chip-remove'),
-  dropOverlay: document.getElementById('drop-overlay')
+  dropOverlay: document.getElementById('drop-overlay'),
+
+  // TTS
+  ttsEnabledCheckbox: document.getElementById('tts-enabled'),
+  ttsModelInput: document.getElementById('tts-model'),
+  ttsVoiceInput: document.getElementById('tts-voice'),
+  ttsRateInput: document.getElementById('tts-rate'),
+  ttsRateValue: document.getElementById('tts-rate-value'),
+  ttsPitchInput: document.getElementById('tts-pitch'),
+  ttsPitchValue: document.getElementById('tts-pitch-value'),
+  ttsProxyUrlInput: document.getElementById('tts-proxy-url'),
+
+  // Local Engine
+  engineSelect: document.getElementById('engine-select'),
+  localModelSelect: document.getElementById('local-model-select'),
+  localModelSize: document.getElementById('local-model-size'),
+  downloadModelBtn: document.getElementById('download-model-btn'),
+  unloadModelBtn: document.getElementById('unload-model-btn'),
+  modelProgressContainer: document.getElementById('model-progress-container'),
+  modelProgressBar: document.getElementById('model-progress-bar'),
+  modelProgressText: document.getElementById('model-progress-text'),
+  modelProgressPct: document.getElementById('model-progress-pct'),
+  engineBadge: document.getElementById('engine-badge'),
+  localSettingsGroup: document.getElementById('local-settings-group'),
+  remoteSettingsGroup: document.getElementById('remote-settings-group'),
+  localStatusText: document.getElementById('local-status-text')
 };
 
 // Check if there is an environment/host injected proxy URL fallback

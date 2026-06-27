@@ -227,3 +227,133 @@ function copyMessageText(button, index) {
     }, 1500);
   });
 }
+
+// ── Text-to-Speech ────────────────────────────────────────────────────────
+
+let ttsUtterance = null;
+let ttsSpeakingIndex = null;
+let ttsAudioContext = null;
+let ttsAudioSource = null;
+
+function getAvailableVoices() {
+  return new Promise(function (resolve) {
+    var voices = window.speechSynthesis.getVoices();
+    if (voices.length) {
+      resolve(voices);
+    } else {
+      window.speechSynthesis.addEventListener('voiceschanged', function () {
+        resolve(window.speechSynthesis.getVoices());
+      }, { once: true });
+    }
+  });
+}
+
+function ttsCleanup() {
+  ttsUtterance = null;
+  ttsSpeakingIndex = null;
+  document.querySelectorAll('.msg-tts-btn.speaking').forEach(function (el) { el.classList.remove('speaking'); });
+}
+
+function speakText(text, index) {
+  if (!text) return;
+  stopSpeaking();
+  if (settings.ttsProxyUrl && settings.ttsProxyUrl.trim()) {
+    speakViaVoxtral(text, index);
+  } else if ('speechSynthesis' in window) {
+    speakViaWebSpeech(text, index);
+  }
+}
+
+function speakViaWebSpeech(text, index) {
+  ttsUtterance = new SpeechSynthesisUtterance(text);
+  ttsUtterance.rate = settings.ttsRate || 1.0;
+  ttsUtterance.pitch = settings.ttsPitch || 1.0;
+  ttsUtterance.voice = settings.ttsVoice ? speechSynthesis.getVoices().find(function (v) { return v.name === settings.ttsVoice; }) : null;
+  ttsSpeakingIndex = index;
+  ttsUtterance.onend = ttsCleanup;
+  ttsUtterance.onerror = ttsCleanup;
+  speechSynthesis.speak(ttsUtterance);
+}
+
+async function speakViaVoxtral(text, index) {
+  ttsSpeakingIndex = index;
+  var btn = document.querySelector('.msg-tts-btn[data-msg-index="' + index + '"]');
+  if (btn) btn.classList.add('loading');
+  try {
+    var headers = { 'Content-Type': 'application/json' };
+    if (settings.apiKey) {
+      headers['Authorization'] = 'Bearer ' + settings.apiKey;
+    }
+    var res = await fetch(settings.ttsProxyUrl, {
+      method: 'POST',
+      headers: headers,
+      body: (function () {
+        var b = {
+          model: settings.ttsModelName || 'voxtral-mini-tts-2603',
+          input: text,
+          response_format: 'mp3'
+        };
+        if (settings.ttsVoice && settings.ttsVoice.trim()) {
+          b.voice = settings.ttsVoice.trim();
+        }
+        return JSON.stringify(b);
+      })()
+    });
+    if (!res.ok) {
+      throw new Error('TTS API error: ' + res.status);
+    }
+    var contentType = res.headers.get('content-type') || '';
+    var arrayBuffer;
+    if (contentType.includes('json')) {
+      var json = await res.json();
+      var audioData = json.audio_data || json.audio;
+      if (!audioData) throw new Error('No audio data in response');
+      var binary = atob(audioData);
+      arrayBuffer = new ArrayBuffer(binary.length);
+      var view = new Uint8Array(arrayBuffer);
+      for (var i = 0; i < binary.length; i++) {
+        view[i] = binary.charCodeAt(i);
+      }
+    } else {
+      arrayBuffer = await res.arrayBuffer();
+    }
+    if (btn) btn.classList.remove('loading');
+    if (btn) btn.classList.add('speaking');
+    ttsAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    var audioBuffer = await ttsAudioContext.decodeAudioData(arrayBuffer);
+    ttsAudioSource = ttsAudioContext.createBufferSource();
+    ttsAudioSource.buffer = audioBuffer;
+    ttsAudioSource.connect(ttsAudioContext.destination);
+    ttsAudioSource.start(0);
+    ttsAudioSource.onended = function () {
+      ttsCleanup();
+      if (ttsAudioContext) {
+        ttsAudioContext.close();
+        ttsAudioContext = null;
+      }
+      ttsAudioSource = null;
+    };
+  } catch (err) {
+    console.error('TTS error:', err);
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.title = 'TTS failed';
+    }
+    ttsCleanup();
+  }
+}
+
+function stopSpeaking() {
+  if (ttsAudioSource) {
+    try { ttsAudioSource.stop(); } catch (e) {}
+    ttsAudioSource = null;
+  }
+  if (ttsAudioContext) {
+    try { ttsAudioContext.close(); } catch (e) {}
+    ttsAudioContext = null;
+  }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  ttsCleanup();
+}

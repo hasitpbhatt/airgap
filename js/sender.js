@@ -100,7 +100,12 @@ async function triggerSend() {
 
   renderChatFeed();
   renderChatList();
-  triggerSendAPI();
+
+  if (settings.engine === 'local') {
+    triggerSendLocal();
+  } else {
+    triggerSendAPI();
+  }
 }
 
 async function triggerSendAPI() {
@@ -425,6 +430,157 @@ async function triggerSendAPI() {
     if (pausedAgentState) {
       elements.continueGenBtn.style.display = 'flex';
     }
+  }
+}
+
+async function triggerSendLocal() {
+  const activeChat = getActiveChat();
+  if (!activeChat) return;
+
+  if (!window.__localEngine || !window.__localEngine.isLoaded()) {
+    showToast('Local model not loaded. If using file://, serve via HTTP (python3 -m http.server 8080) first, then download a model in Settings > Engine.', 'error');
+    setGeneratingState(false);
+    return;
+  }
+
+  setGeneratingState(true);
+
+  const loadingRow = document.createElement('div');
+  loadingRow.className = 'message-row assistant';
+  loadingRow.id = 'temp-loading-bubble';
+  loadingRow.innerHTML = `
+    <div class="message-bubble">
+      <div class="msg-header assistant">
+        ${PERSONAS[activeChat.persona]?.icon || '🤖'} ${PERSONAS[activeChat.persona]?.label || 'Assistant'}
+      </div>
+      <div class="msg-content">
+        <div class="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    </div>
+  `;
+  elements.chatFeed.appendChild(loadingRow);
+  tryAutoScroll();
+
+  let messages = activeChat.messages.map(m => ({
+    role: m.role,
+    content: m.content
+  }));
+
+  // Use local-only tools
+  const localTools = getAllTools().filter(t => {
+    const name = t.function?.name;
+    return name && LOCAL_TOOLS.has(name);
+  });
+
+  abortController = new AbortController();
+
+  try {
+    const gen = window.__localEngine.chatCompletion(messages, localTools.length > 0 ? localTools : undefined);
+    let streamContent = '';
+    let hasToolCalls = false;
+
+    for await (const result of gen) {
+      if (abortController.signal.aborted) break;
+
+      if (result.type === 'delta') {
+        streamContent = result.fullText;
+        const loadingBubble = document.getElementById('temp-loading-bubble');
+        if (loadingBubble) {
+          const msgContent = loadingBubble.querySelector('.msg-content');
+          if (msgContent) msgContent.innerHTML = mdToHtml(streamContent);
+        }
+      } else if (result.type === 'tool_calls') {
+        hasToolCalls = true;
+        const bubble = document.getElementById('temp-loading-bubble');
+        if (bubble) bubble.remove();
+
+        for (const tc of result.toolCalls) {
+          const tcObj = {
+            id: 'local_' + Date.now(),
+            type: 'function',
+            function: {
+              name: tc.name,
+              arguments: tc.arguments || '{}'
+            }
+          };
+          appendToolCallUI(tcObj);
+          const toolResult = await executeToolCall(tcObj);
+          updateToolCallUI(tcObj, toolResult);
+          messages.push({
+            role: 'assistant',
+            content: null,
+            tool_calls: [tcObj]
+          });
+          messages.push({
+            role: 'tool',
+            tool_call_id: tcObj.id,
+            content: JSON.stringify(toolResult)
+          });
+        }
+
+        // Create new loading bubble for next streaming pass
+        const nextRow = document.createElement('div');
+        nextRow.className = 'message-row assistant';
+        nextRow.id = 'temp-loading-bubble';
+        nextRow.innerHTML = `
+          <div class="message-bubble">
+            <div class="msg-header assistant">
+              ${PERSONAS[activeChat.persona]?.icon || '🤖'} ${PERSONAS[activeChat.persona]?.label || 'Assistant'}
+            </div>
+            <div class="msg-content">
+              <div class="typing-indicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+            </div>
+          </div>
+        `;
+        elements.chatFeed.appendChild(nextRow);
+        tryAutoScroll();
+      }
+    }
+
+    if (hasToolCalls) return;
+
+    const bubble = document.getElementById('temp-loading-bubble');
+    if (bubble) bubble.remove();
+
+    if (streamContent) {
+      activeChat.messages.push({ role: 'assistant', content: streamContent });
+      activeChat.turnCount++;
+      saveChats();
+    }
+
+    renderChatFeed();
+  } catch (err) {
+    const bubble = document.getElementById('temp-loading-bubble');
+    if (bubble) bubble.remove();
+
+    if (err.name === 'AbortError') {
+      activeChat.messages.push({
+        role: 'assistant',
+        content: 'Response generation was stopped.',
+        isStopped: true
+      });
+      saveChats();
+    } else {
+      console.error('Local Engine Error:', err);
+      activeChat.messages.push({
+        role: 'assistant',
+        content: 'Failed to get response from local model: ' + err.message,
+        isError: true
+      });
+      saveChats();
+    }
+    renderChatFeed();
+  } finally {
+    setGeneratingState(false);
+    abortController = null;
   }
 }
 

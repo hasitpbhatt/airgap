@@ -133,6 +133,29 @@ function init() {
     elements.systemPromptTextarea.disabled = true;
   }
 
+  // TTS settings
+  elements.ttsEnabledCheckbox.checked = settings.ttsEnabled;
+  elements.ttsModelInput.value = settings.ttsModelName || 'voxtral-mini-tts-2603';
+  elements.ttsRateInput.value = settings.ttsRate || 1.0;
+  elements.ttsRateValue.textContent = settings.ttsRate || 1.0;
+  elements.ttsPitchInput.value = settings.ttsPitch || 1.0;
+  elements.ttsPitchValue.textContent = settings.ttsPitch || 1.0;
+  if (elements.ttsProxyUrlInput) elements.ttsProxyUrlInput.value = settings.ttsProxyUrl || '';
+  elements.ttsVoiceInput.value = settings.ttsVoice || '';
+
+  // Local Engine
+  elements.engineSelect.value = settings.engine || 'remote';
+  elements.localModelSelect.value = settings.localModelName || 'qwen2.5-0.5b';
+  updateLocalEngineUI(settings.engine);
+
+  // If local engine is set, hide connect overlay and show local settings
+  if (settings.engine === 'local') {
+    const connectOverlay = document.getElementById('connect-overlay');
+    if (connectOverlay && connectOverlay.style.display !== 'none') {
+      connectOverlay.style.display = 'none';
+    }
+  }
+
   // Load Chats
   const savedChats = localStorage.getItem('opencode_chats');
   if (savedChats) {
@@ -160,6 +183,69 @@ function init() {
   setupAutoScroll();
   setupEventListeners();
   adjustResponsiveLayout();
+}
+
+// ── Local Engine UI Helpers ─────────────────────────────────────────────────
+function updateLocalEngineUI(engine) {
+  const isLocal = engine === 'local';
+  if (isLocal && !window.__localEngine) {
+    showToast('Local engine not available when loaded via file:// protocol. Use a local HTTP server (e.g., python3 -m http.server 8080) to test the local engine.', 'error');
+  }
+  elements.localSettingsGroup.style.display = isLocal ? 'block' : 'none';
+  elements.remoteSettingsGroup.style.display = isLocal ? 'none' : 'block';
+  elements.engineBadge.style.display = isLocal ? 'inline' : 'none';
+
+  // Update model select in header
+  if (isLocal) {
+    elements.modelSelect.style.display = 'none';
+    elements.customModelGroup.style.display = 'none';
+  } else {
+    elements.modelSelect.style.display = '';
+    const isPreset = ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest', 'codestral-latest'].includes(settings.modelName);
+    if (isPreset) {
+      elements.modelSelect.value = settings.modelName;
+      elements.customModelGroup.style.display = 'none';
+    } else {
+      elements.modelSelect.value = 'custom';
+      elements.customModelGroup.style.display = 'inline-flex';
+    }
+  }
+
+  // Hide connect overlay when local
+  const connectOverlay = document.getElementById('connect-overlay');
+  if (isLocal && connectOverlay && connectOverlay.style.display !== 'none') {
+    connectOverlay.style.display = 'none';
+  }
+  // Show connect overlay when remote and no key
+  if (!isLocal && connectOverlay && !settings.apiKey && !settings.injectedKey) {
+    connectOverlay.style.display = 'flex';
+  }
+
+  updateInputUIState();
+}
+
+function updateLocalModelSizeDisplay() {
+  const modelKey = elements.localModelSelect.value;
+  const config = window.__localEngine?.LOCAL_MODELS_CONFIG?.[modelKey];
+  if (config) {
+    elements.localModelSize.textContent = config.size + ' RAM · ' + config.context.toLocaleString() + ' ctx';
+  }
+}
+
+function updateLocalStatusText() {
+  if (window.__localEngine?.isLoaded()) {
+    elements.localStatusText.textContent = 'Model loaded: ' + (window.__localEngine.getLoadedModelKey() || 'unknown');
+    elements.downloadModelBtn.style.display = 'none';
+    elements.unloadModelBtn.style.display = 'block';
+  } else if (window.__localEngine?.getIsModelLoading()) {
+    elements.localStatusText.textContent = 'Loading model...';
+    elements.downloadModelBtn.style.display = 'none';
+    elements.unloadModelBtn.style.display = 'none';
+  } else {
+    elements.localStatusText.textContent = 'Model not loaded. Click "Download & Load" to start.';
+    elements.downloadModelBtn.style.display = 'block';
+    elements.unloadModelBtn.style.display = 'none';
+  }
 }
 
 // Settings Event Listeners & Binding
@@ -460,6 +546,134 @@ function setupEventListeners() {
   } else if (elements.micBtn) {
     elements.micBtn.classList.add('hidden');
   }
+
+  // ── TTS Settings ───────────────────────────────────────────────────────
+  elements.ttsEnabledCheckbox.addEventListener('change', function (e) {
+    settings.ttsEnabled = e.target.checked;
+    saveSettings();
+  });
+
+  elements.ttsModelInput.addEventListener('input', function (e) {
+    settings.ttsModelName = e.target.value.trim();
+    saveSettings();
+  });
+
+  if (elements.ttsProxyUrlInput) {
+    elements.ttsProxyUrlInput.addEventListener('input', function (e) {
+      settings.ttsProxyUrl = e.target.value.trim();
+      saveSettings();
+    });
+  }
+
+  elements.ttsRateInput.addEventListener('input', function (e) {
+    var val = parseFloat(e.target.value);
+    settings.ttsRate = val;
+    elements.ttsRateValue.textContent = val.toFixed(1);
+    saveSettings();
+  });
+
+  elements.ttsPitchInput.addEventListener('input', function (e) {
+    var val = parseFloat(e.target.value);
+    settings.ttsPitch = val;
+    elements.ttsPitchValue.textContent = val.toFixed(1);
+    saveSettings();
+  });
+
+  elements.ttsVoiceInput.addEventListener('input', function (e) {
+    settings.ttsVoice = e.target.value;
+    saveSettings();
+  });
+
+  // Populate voice datalist when settings panel opens
+  elements.settingsTrigger.addEventListener('click', function populateVoices() {
+    getAvailableVoices().then(function (voices) {
+      var list = document.getElementById('tts-voice-list');
+      list.innerHTML = voices.map(function (v) {
+        return '<option value="' + v.name + '">' + v.name + ' (' + v.lang + ')</option>';
+      }).join('');
+    });
+    elements.settingsTrigger.removeEventListener('click', populateVoices);
+  });
+
+  elements.engineSelect.addEventListener('change', function(e) {
+    settings.engine = e.target.value;
+    saveSettings();
+    updateLocalEngineUI(settings.engine);
+    updateLocalStatusText();
+  });
+
+  elements.localModelSelect.addEventListener('change', function(e) {
+    settings.localModelName = e.target.value;
+    saveSettings();
+    updateLocalModelSizeDisplay();
+  });
+
+  elements.downloadModelBtn.addEventListener('click', async function() {
+    if (!window.__localEngine) {
+      showToast('Local engine not available. Open this page via HTTP (not file://) to enable the local engine.', 'error');
+      return;
+    }
+
+    const modelKey = elements.localModelSelect.value;
+    const config = window.__localEngine.LOCAL_MODELS_CONFIG[modelKey];
+    if (!config) return;
+
+    elements.downloadModelBtn.disabled = true;
+    elements.modelProgressContainer.style.display = 'block';
+    elements.modelProgressBar.value = 0;
+    elements.modelProgressText.textContent = 'Starting download...';
+    elements.modelProgressPct.textContent = '0%';
+
+    settings.localModelName = modelKey;
+    settings.localModelLoaded = false;
+    settings.localModelLoading = true;
+    saveSettings();
+    updateLocalStatusText();
+
+    try {
+      await window.__localEngine.loadModel(modelKey, function(progress) {
+        const pct = Math.round((progress.progress || 0) * 100);
+        elements.modelProgressBar.value = pct;
+        elements.modelProgressPct.textContent = pct + '%';
+        elements.modelProgressText.textContent = progress.text || progress.phase || 'Downloading...';
+      });
+
+      settings.localModelLoaded = true;
+      settings.localModelLoading = false;
+      saveSettings();
+      updateLocalStatusText();
+      showToast('Model loaded successfully', 'success');
+    } catch (err) {
+      settings.localModelLoaded = false;
+      settings.localModelLoading = false;
+      saveSettings();
+      updateLocalStatusText();
+      showToast('Failed to load model: ' + err.message, 'error');
+      console.error('Model load error:', err);
+    } finally {
+      elements.downloadModelBtn.disabled = false;
+      elements.modelProgressContainer.style.display = 'none';
+    }
+  });
+
+  elements.unloadModelBtn.addEventListener('click', async function() {
+    if (!window.__localEngine) return;
+
+    try {
+      await window.__localEngine.unloadModel();
+      settings.localModelLoaded = false;
+      settings.localModelLoading = false;
+      saveSettings();
+      updateLocalStatusText();
+      showToast('Model unloaded', 'success');
+    } catch (err) {
+      showToast('Failed to unload model: ' + err.message, 'error');
+    }
+  });
+
+  // Initial UI state
+  updateLocalModelSizeDisplay();
+  updateLocalStatusText();
 
   // ── Custom Tools ───────────────────────────────────────────────────────
   elements.addCustomToolBtn.addEventListener('click', function() {

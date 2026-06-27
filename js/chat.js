@@ -567,6 +567,11 @@ function renderChatFeed() {
               <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
             </button>
           ` : ''}
+          ${!isUser && !msg.isError ? `
+            <button class="msg-tts-btn" title="Read Aloud" onclick="speakText(this.closest('.message-row').querySelector('.msg-content').textContent, ${idx})">
+              <i data-lucide="volume-2" style="width: 12px; height: 12px;"></i>
+            </button>
+          ` : ''}
           <button class="msg-action-btn" title="Delete Message" onclick="deleteMessage(${idx})">
             <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
           </button>
@@ -788,14 +793,16 @@ function updateInputUIState() {
     parts.push(`<span style="opacity:0.7">↑ ${inTok.toLocaleString()} · ↓ ${outTok.toLocaleString()}</span>`);
   }
 
-  // Cost estimate
-  const pricing = MODEL_PRICING[settings.modelName];
-  if (pricing && total > 0) {
-    const cost = (inTok / 1000) * pricing.input + (outTok / 1000) * pricing.output;
-    if (cost >= 0.001) {
-      parts.push(`<span style="opacity:0.5">~$${cost.toFixed(3)}</span>`);
-    } else {
-      parts.push(`<span style="opacity:0.5">< $0.001</span>`);
+  // Cost estimate (remote only)
+  if (settings.engine !== 'local') {
+    const pricing = MODEL_PRICING[settings.modelName];
+    if (pricing && total > 0) {
+      const cost = (inTok / 1000) * pricing.input + (outTok / 1000) * pricing.output;
+      if (cost >= 0.001) {
+        parts.push(`<span style="opacity:0.5">~$${cost.toFixed(3)}</span>`);
+      } else {
+        parts.push(`<span style="opacity:0.5">< $0.001</span>`);
+      }
     }
   }
 
@@ -826,6 +833,9 @@ function calculateTotalTokens(chat) {
 }
 
 function getContextLimit() {
+  if (settings.engine === 'local') {
+    return CONTEXT_LIMITS[settings.localModelName] || 2048;
+  }
   return CONTEXT_LIMITS[settings.modelName] || 32768;
 }
 

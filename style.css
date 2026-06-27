@@ -2310,6 +2310,66 @@ mark.search-highlight-current {
   }
 }
 
+/* ── TTS ───────────────────────────────────────────────────────────────── */
+.msg-tts-btn {
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-muted));
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.msg-tts-btn:hover {
+  color: hsl(var(--accent-light));
+  background-color: hsl(var(--accent-light) / 0.1);
+}
+.msg-tts-btn.speaking {
+  color: hsl(var(--accent));
+  animation: ttsPulse 0.8s ease-in-out infinite;
+}
+@keyframes ttsPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Local Engine UI ─────────────────────────────────────────────────── */
+#engine-badge.local-loading {
+  animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+#model-progress-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 0.25rem;
+  background: hsl(var(--bg-tertiary));
+  overflow: hidden;
+}
+
+#model-progress-bar::-webkit-progress-value {
+  background: hsl(var(--accent));
+  border-radius: 0.25rem;
+  transition: width 0.3s ease;
+}
+
+#model-progress-bar::-webkit-progress-bar {
+  background: hsl(var(--bg-tertiary));
+  border-radius: 0.25rem;
+}
+
+#model-progress-bar::-moz-progress-bar {
+  background: hsl(var(--accent));
+  border-radius: 0.25rem;
+}
+
 @media (max-width: 480px) {
   .btn-mic, .btn-attach { width: 28px; height: 28px; }
   .btn-send { width: 28px; height: 28px; }

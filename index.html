@@ -33,6 +33,16 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Importmap for local LLM engines -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@mlc-ai/web-llm": "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.46/+esm",
+      "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/+esm"
+    }
+  }
+  </script>
+
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -220,6 +230,92 @@
             <textarea id="system-prompt" class="setting-input" style="resize: vertical; min-height: 80px;" placeholder="Instructions for the AI..."></textarea>
           </div>
 
+          <!-- TTS Section -->
+          <div class="setting-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+              <label style="margin-bottom:0;font-size:0.75rem;display:flex;align-items:center;gap:0.4rem;">
+                <i data-lucide="volume-2" style="width:12px;height:12px;"></i> Text-to-Speech
+              </label>
+              <div class="toggle-group" style="margin-bottom:0;">
+                <input type="checkbox" id="tts-enabled">
+                <label for="tts-enabled" style="font-size:0.7rem;text-transform:none;letter-spacing:0;">Enabled</label>
+              </div>
+            </div>
+            <p style="font-size:0.65rem;color:hsl(var(--text-muted));margin:0 0 0.4rem;line-height:1.3;">Read assistant messages aloud using browser speech synthesis.</p>
+            <div id="tts-settings-body">
+              <div class="setting-group" style="margin-bottom:0.5rem;">
+                <label for="tts-model">TTS Model Name</label>
+                <input type="text" id="tts-model" class="setting-input" placeholder="voxtral-mini-tts-2603" style="font-size:0.75rem;">
+              </div>
+              <div class="setting-group" style="margin-bottom:0.5rem;">
+                <label for="tts-proxy-url">TTS API Proxy URL (optional)</label>
+                <input type="text" id="tts-proxy-url" class="setting-input" placeholder="https://api.mistral.ai/v1/audio/speech" style="font-size:0.75rem;">
+              </div>
+              <div class="setting-group" style="margin-bottom:0.5rem;">
+                <label for="tts-voice">Voice</label>
+                <input type="text" id="tts-voice" class="setting-input" list="tts-voice-list" placeholder="e.g. male-1, female-1, or Web Speech voice name" style="font-size:0.75rem;">
+                <datalist id="tts-voice-list"></datalist>
+              </div>
+              <div class="setting-group" style="margin-bottom:0.5rem;">
+                <label for="tts-rate">Rate: <span id="tts-rate-value">1.0</span></label>
+                <input type="range" id="tts-rate" min="0.5" max="2.0" step="0.1" value="1.0" style="width:100%;accent-color:hsl(var(--accent));">
+              </div>
+              <div class="setting-group" style="margin-bottom:0;">
+                <label for="tts-pitch">Pitch: <span id="tts-pitch-value">1.0</span></label>
+                <input type="range" id="tts-pitch" min="0.5" max="2.0" step="0.1" value="1.0" style="width:100%;accent-color:hsl(var(--accent));">
+              </div>
+            </div>
+          </div>
+
+          <!-- Local Engine Section -->
+          <div class="setting-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+              <label style="margin-bottom:0;font-size:0.75rem;display:flex;align-items:center;gap:0.4rem;">
+                <i data-lucide="cpu" style="width:12px;height:12px;"></i> Engine
+              </label>
+            </div>
+            <select id="engine-select" class="setting-input" style="font-size:0.75rem;">
+              <option value="remote">Remote API</option>
+              <option value="local">Local Browser (BETA)</option>
+            </select>
+          </div>
+
+          <div id="local-settings-group" style="display:none;">
+            <div class="setting-group">
+              <label for="local-model-select" style="font-size:0.75rem;">Model</label>
+              <div style="display:flex;gap:0.4rem;align-items:center;">
+                <select id="local-model-select" class="setting-input" style="flex:1;font-size:0.75rem;">
+                  <option value="qwen2.5-0.5b">Qwen2.5-0.5B (~310 MB)</option>
+                  <option value="qwen2.5-1.5b">Qwen2.5-1.5B (~950 MB)</option>
+                </select>
+                <span id="local-model-size" style="font-size:0.65rem;color:hsl(var(--text-muted));white-space:nowrap;"></span>
+              </div>
+              <p style="font-size:0.65rem;color:hsl(var(--text-muted));margin:0.25rem 0 0;line-height:1.3;">
+                Requires WebGPU (Chrome 113+ / Edge 113+). Falls back to CPU/WASM in other browsers.
+                Model is cached in browser storage after first download.
+              </p>
+            </div>
+            <div class="setting-group">
+              <button id="download-model-btn" class="setting-btn" style="width:100%;font-size:0.75rem;padding:0.4rem;">
+                <i data-lucide="download" style="width:12px;height:12px;"></i> Download &amp; Load
+              </button>
+              <button id="unload-model-btn" class="setting-btn" style="width:100%;font-size:0.75rem;padding:0.4rem;margin-top:0.3rem;display:none;">
+                <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Unload Model (keep cache)
+              </button>
+              <div id="model-progress-container" style="display:none;margin-top:0.4rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:hsl(var(--text-muted));margin-bottom:0.2rem;">
+                  <span id="model-progress-text">Downloading...</span>
+                  <span id="model-progress-pct">0%</span>
+                </div>
+                <progress id="model-progress-bar" value="0" max="100" style="width:100%;height:8px;accent-color:hsl(var(--accent));border-radius:0.25rem;"></progress>
+              </div>
+              <div id="local-status-text" style="font-size:0.65rem;color:hsl(var(--text-muted));margin-top:0.25rem;"></div>
+            </div>
+          </div>
+
+          <div id="remote-settings-group">
+          </div>
+
           <!-- Custom Tools Section -->
           <div class="setting-group" id="custom-tools-container">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
@@ -269,6 +365,8 @@
           <div id="custom-model-group" style="display: none; align-items: center; gap: 0.25rem; margin-left: 0.5rem;">
             <input type="text" id="model-name" class="setting-input" style="width: 130px; padding: 0.25rem 0.5rem; font-size: 0.825rem; font-family: var(--font-mono);" placeholder="Custom name...">
           </div>
+
+          <span id="engine-badge" style="display:none;font-size:0.65rem;font-weight:600;padding:0.15rem 0.4rem;border-radius:0.25rem;background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));white-space:nowrap;">LOCAL</span>
         </div>
 
         <div class="header-right">
@@ -522,6 +620,7 @@
   </div>
 
   <!-- Custom Logic Scripts (loaded in dependency order, no modules -- works from file://) -->
+  <script type="module" src="js/local-engine.js"></script>
   <script src="js/constants.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/storage.js"></script>
