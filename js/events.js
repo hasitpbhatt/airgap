@@ -78,7 +78,18 @@ function init() {
       connectOverlay.style.display = 'flex';
     }
   }
-  if (!settings.apiKey && !settings.injectedKey) {
+  const connectLocalBtn = document.getElementById('connect-local-btn');
+  if (connectLocalBtn) {
+    connectLocalBtn.addEventListener('click', function() {
+      settings.engine = 'local';
+      saveSettings();
+      hideConnectScreen();
+      elements.engineSelect.value = 'local';
+      updateLocalEngineUI('local');
+      updateLocalStatusText();
+    });
+  }
+  if (settings.engine !== 'local' && !settings.apiKey && !settings.injectedKey) {
     showConnectScreen();
   }
   if (connectBtn) {
@@ -155,6 +166,43 @@ function init() {
       connectOverlay.style.display = 'none';
     }
   }
+
+  // Listen for local engine auto-init events (dispatched by local-engine.js boot sequence)
+  window.addEventListener('local-engine-loading', function() {
+    updateLocalStatusText();
+    elements.modelProgressContainer.style.display = 'block';
+    elements.modelProgressBar.value = 0;
+    elements.modelProgressText.textContent = 'Restoring model from cache...';
+    elements.modelProgressPct.textContent = '0%';
+    elements.downloadModelBtn.disabled = true;
+  });
+
+  window.addEventListener('local-engine-progress', function(e) {
+    var report = e.detail;
+    if (!report) return;
+    if (report.progress !== undefined) {
+      var pct = Math.round(report.progress * 100);
+      elements.modelProgressBar.value = pct;
+      elements.modelProgressPct.textContent = pct + '%';
+    }
+    if (report.text) {
+      elements.modelProgressText.textContent = report.text;
+    }
+  });
+
+  window.addEventListener('local-engine-ready', function() {
+    elements.modelProgressContainer.style.display = 'none';
+    elements.downloadModelBtn.disabled = false;
+    updateLocalStatusText();
+    showToast('Local model restored from cache', 'success');
+  });
+
+  window.addEventListener('local-engine-error', function(e) {
+    elements.modelProgressContainer.style.display = 'none';
+    elements.downloadModelBtn.disabled = false;
+    updateLocalStatusText();
+    showToast('Failed to restore local model: ' + ((e.detail && e.detail.message) || e.detail || 'Unknown error'), 'error');
+  });
 
   // Load Chats
   const savedChats = localStorage.getItem('opencode_chats');

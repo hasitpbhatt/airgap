@@ -1405,6 +1405,23 @@ body {
   white-space: nowrap;
 }
 .connect-btn:hover { opacity: 0.85; }
+.connect-btn-secondary {
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  color: hsl(var(--accent));
+  border: 1px solid hsl(var(--accent) / 0.4);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.connect-btn-secondary:hover {
+  background: hsl(var(--accent) / 0.1);
+  border-color: hsl(var(--accent));
+}
 .connect-headline {
   font-size: 1.1rem;
   font-weight: 500;

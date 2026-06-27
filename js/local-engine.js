@@ -1,5 +1,7 @@
-// Local LLM Engine — WebLLM (WebGPU) with Transformers.js fallback
-// ES module that exports to window for existing global scripts.
+// ============================================================================
+// Local LLM Engine — WebLLM (WebGPU) + Transformers.js (WASM) Fallback
+// Fully Offline Capable with Auto-Reload & Error Resilience
+// ============================================================================
 
 const LOCAL_MODELS_CONFIG = {
   'qwen2.5-0.5b': {
@@ -23,22 +25,13 @@ let engineInstance = null;   // WebLLM CreateMLCEngine or Transformers.js pipeli
 let loadedModelKey = null;   // key from LOCAL_MODELS_CONFIG
 let isModelLoading = false;
 
-function isLoaded() {
-  return engineInstance !== null && !!engineType;
-}
+// --- State Getters ---
+function isLoaded() { return engineInstance !== null && !!engineType; }
+function getEngineType() { return engineType; }
+function getLoadedModelKey() { return loadedModelKey; }
+function getIsModelLoading() { return isModelLoading; }
 
-function getEngineType() {
-  return engineType;
-}
-
-function getLoadedModelKey() {
-  return loadedModelKey;
-}
-
-function getIsModelLoading() {
-  return isModelLoading;
-}
-
+// --- Hardware Check ---
 async function checkWebGPU() {
   if (navigator.gpu) {
     try {
@@ -49,6 +42,7 @@ async function checkWebGPU() {
   return false;
 }
 
+// --- Core Model Loader ---
 async function loadModel(modelKey, onProgress) {
   if (isModelLoading) throw new Error('Model is already loading');
   if (engineInstance) await unloadModel();
@@ -60,6 +54,7 @@ async function loadModel(modelKey, onProgress) {
   loadedModelKey = modelKey;
 
   const hasWebGPU = await checkWebGPU();
+  const isOnline = navigator.onLine;
 
   try {
     if (hasWebGPU) {
@@ -67,26 +62,27 @@ async function loadModel(modelKey, onProgress) {
       if (onProgress) onProgress({ phase: 'download', progress: 0, text: 'Initializing WebLLM...' });
 
       const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
-      if (onProgress) onProgress({ phase: 'download', progress: 0.1, text: 'Loading local model configuration...' });
-
-      const appConfig = {
+      
+      // Force offline compliance config if user is offline to skip CDN checks
+      const appConfig = !isOnline ? {
         model_list: [
           {
-            model: 'https://huggingface.co/mlc-ai/' + config.webllm,
+            model: `https://huggingface.co/mlc-ai/${config.webllm}`,
             model_id: config.webllm,
-            model_lib: config.webllm + '-webgpu.wasm'
+            model_lib: `${config.webllm}-webgpu.wasm`
           }
         ]
-      };
+      } : undefined;
+
+      if (onProgress) onProgress({ phase: 'download', progress: 0.1, text: isOnline ? 'Downloading weights...' : 'Loading from cache...' });
 
       engineInstance = await CreateMLCEngine(config.webllm, {
-        appConfig: appConfig,
+        appConfig: appConfig, 
         initProgressCallback: (report) => {
           if (onProgress && report.text) {
-            const pct = report.progress || 0;
             onProgress({
               phase: report.text.includes('Loading') ? 'loading' : 'download',
-              progress: pct,
+              progress: report.progress || 0,
               text: report.text,
             });
           }
@@ -96,12 +92,18 @@ async function loadModel(modelKey, onProgress) {
       engineType = 'transformers';
       if (onProgress) onProgress({ phase: 'download', progress: 0, text: 'Initializing Transformers.js...' });
 
-      const { pipeline } = await import('@huggingface/transformers');
-      if (onProgress) onProgress({ phase: 'download', progress: 0.3, text: 'Loading model into memory...' });
+      const { pipeline, env } = await import('@huggingface/transformers');
+
+      // Strict offline configuration
+      env.useBrowserCache = true;
+      env.allowRemoteModels = isOnline; // False when offline to prevent unauthorized access errors
+
+      if (onProgress) onProgress({ phase: 'download', progress: 0.3, text: 'Loading model files...' });
 
       engineInstance = await pipeline('text-generation', config.transformers, {
         dtype: 'q4',
         device: 'wasm',
+        local_files_only: !isOnline, // True when offline to skip HF pings
         progress_callback: (p) => {
           if (onProgress && typeof p === 'object' && p.status) {
             onProgress({
@@ -115,17 +117,24 @@ async function loadModel(modelKey, onProgress) {
     }
 
     if (onProgress) onProgress({ phase: 'ready', progress: 1, text: 'Model ready' });
+    
+    // Save state so auto-reload works on refresh
+    localStorage.setItem('localModelLoaded', 'true');
+    localStorage.setItem('selectedModelKey', modelKey);
+
   } catch (err) {
     engineType = null;
     engineInstance = null;
     loadedModelKey = null;
     isModelLoading = false;
+    localStorage.setItem('localModelLoaded', 'false');
     throw err;
   }
 
   isModelLoading = false;
 }
 
+// --- Unloader ---
 async function unloadModel() {
   if (engineInstance) {
     try {
@@ -138,8 +147,10 @@ async function unloadModel() {
   engineType = null;
   loadedModelKey = null;
   isModelLoading = false;
+  localStorage.setItem('localModelLoaded', 'false');
 }
 
+// --- Prompt & Tool Builders ---
 function buildLocalSystemPrompt(baseSystemPrompt, tools) {
   let prompt = baseSystemPrompt || 'You are a helpful AI assistant.';
   if (tools && tools.length > 0) {
@@ -182,6 +193,7 @@ function parseToolCalls(text) {
   return calls;
 }
 
+// --- Core Generation ---
 async function* chatCompletion(messages, tools) {
   if (!engineInstance) throw new Error('No model loaded');
 
@@ -189,7 +201,6 @@ async function* chatCompletion(messages, tools) {
   const contextLimit = config ? config.context : 2048;
   const maxTokens = Math.floor(contextLimit * 0.5);
 
-  // Build messages with tool injection
   const localMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
   if (tools && tools.length > 0 && localMessages.length > 0 && localMessages[0].role === 'system') {
@@ -208,7 +219,8 @@ async function* chatCompletion(messages, tools) {
     });
 
     let fullText = '';
-    for await (const chunk of asyncChunkGenerator) {
+    // CHANGED 'const chunk' to 'let chunk'
+    for await (let chunk of asyncChunkGenerator) { 
       const content = chunk.choices?.[0]?.delta?.content || '';
       if (content) {
         fullText += content;
@@ -216,7 +228,6 @@ async function* chatCompletion(messages, tools) {
       }
     }
 
-    // Check for tool calls in the accumulated response
     const toolCalls = parseToolCalls(fullText);
     if (toolCalls.length > 0) {
       yield { type: 'tool_calls', toolCalls, fullText };
@@ -224,7 +235,6 @@ async function* chatCompletion(messages, tools) {
       yield { type: 'done', content: fullText };
     }
   } else {
-    // Transformers.js — no streaming
     const text = engineInstance.tokenizer.apply_chat_template(localMessages, {
       tokenize: false,
       add_generation_prompt: true,
@@ -239,7 +249,6 @@ async function* chatCompletion(messages, tools) {
     const generatedText = output[0]?.generated_text || '';
     const response = generatedText.slice(text.length).trim();
 
-    // Yield the full response at once (no streaming)
     yield { type: 'delta', content: response, fullText: response };
 
     const toolCalls = parseToolCalls(response);
@@ -251,30 +260,33 @@ async function* chatCompletion(messages, tools) {
   }
 }
 
+// --- Stream Wrapper ---
 async function* chatCompletionStream(messages, tools, onToolCall) {
   const gen = chatCompletion(messages, tools);
   let fullText = '';
 
-  for await (const result of gen) {
+  // CHANGED 'const result' to 'let result' to prevent constant assignment errors during stream drops
+  for await (let result of gen) { 
     if (result.type === 'delta') {
       fullText = result.fullText;
       yield result.content;
     } else if (result.type === 'tool_calls') {
       if (onToolCall) {
-        for (const tc of result.toolCalls) {
-          yield null; // signal tool call to sender
+        // CHANGED 'const tc' to 'let tc'
+        for (let tc of result.toolCalls) { 
+          yield null; 
           onToolCall(tc);
         }
       }
     } else if (result.type === 'done') {
-      yield null; // done
+      yield null; 
     }
   }
 
   return fullText;
 }
 
-// Export to global scope for non-module scripts
+// --- Export to Window ---
 window.__localEngine = {
   LOCAL_MODELS_CONFIG,
   loadModel,
@@ -289,3 +301,43 @@ window.__localEngine = {
   buildLocalSystemPrompt,
   parseToolCalls,
 };
+
+// ============================================================================
+// Auto-Initialization / Boot Sequence
+// ============================================================================
+async function initApplication() {
+  const engineSelection = localStorage.getItem('engine'); 
+  const localModelLoaded = localStorage.getItem('localModelLoaded') === 'true';
+  const savedModelKey = localStorage.getItem('selectedModelKey') || 'qwen2.5-0.5b';
+
+  // Automatically boot the model if settings expect it to be active
+  if (engineSelection === 'local' && localModelLoaded) {
+    console.log(`[Init] Auto-reloading local model (${savedModelKey}) from browser cache...`);
+    
+    try {
+      // Optional: Dispatch a custom event here if you want your main UI script to catch it and show a spinner
+      window.dispatchEvent(new CustomEvent('local-engine-loading', { detail: { progress: 0 } }));
+
+      await window.__localEngine.loadModel(savedModelKey, (report) => {
+        // Dispatch progress updates globally so your UI file can hook into it
+        window.dispatchEvent(new CustomEvent('local-engine-progress', { detail: report }));
+      });
+
+      console.log('[Init] Local model successfully restored from cache.');
+      window.dispatchEvent(new Event('local-engine-ready'));
+
+    } catch (error) {
+      console.error('[Init] Failed to auto-reload local model:', error);
+      // Clean up localStorage if the cache is missing or corrupt
+      localStorage.setItem('localModelLoaded', 'false');
+      window.dispatchEvent(new CustomEvent('local-engine-error', { detail: error.message }));
+    }
+  }
+}
+
+// Ensure the boot sequence runs correctly regardless of when the script is injected
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApplication);
+} else {
+  initApplication();
+}
