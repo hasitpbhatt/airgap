@@ -1,4 +1,5 @@
 async function handleFetchUrl(args) {
+  if (!navigator.onLine) return { error: 'You are offline. Cannot fetch URLs without internet connection.' };
   const CACHE_TTL = 300000;
   const cacheKey = '_fetch_cache_' + encodeURIComponent(args.url);
 
@@ -87,6 +88,7 @@ async function handleFetchUrl(args) {
 }
 
 async function handleSearchWeb(args) {
+  if (!navigator.onLine) return { error: 'You are offline. Cannot search the web without internet connection.' };
   try {
     const query = encodeURIComponent(args.query);
 
@@ -320,6 +322,7 @@ async function handleSearchWeb(args) {
 }
 
 async function handleReadRss(args) {
+  if (!navigator.onLine) return { error: 'You are offline. Cannot read RSS feeds without internet connection.' };
   try {
     var rssProxyUrl = settings.fetchUrl && settings.fetchUrl !== 'https://airgap-fetch.gitub.workers.dev/' ? settings.fetchUrl : 'https://airgap-fetch.gitub.workers.dev/';
     const limit = Math.min(args.limit || 10, 50);

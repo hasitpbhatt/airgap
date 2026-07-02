@@ -642,23 +642,42 @@ async function triggerCompact() {
   messages.push({ role: 'user', content: compactPrompt });
 
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (settings.apiKey) headers['Authorization'] = `Bearer ${settings.apiKey}`;
+    let summary;
 
-    const res = await fetch(settings.proxyUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: settings.modelName || 'mistral-small-latest',
-        messages
-      }),
-      signal: abortController.signal
-    });
+    if (settings.engine === 'local' && window.__localEngine?.isLoaded()) {
+      const gen = window.__localEngine.chatCompletion(messages);
+      let fullText = '';
+      for await (const result of gen) {
+        if (result.type === 'delta') {
+          fullText = result.fullText;
+          const loadingBubble = document.getElementById('temp-loading-bubble');
+          if (loadingBubble) {
+            const msgContent = loadingBubble.querySelector('.msg-content');
+            if (msgContent) msgContent.textContent = fullText;
+          }
+        } else if (result.type === 'done') {
+          summary = result.content;
+        }
+      }
+    } else {
+      const headers = { 'Content-Type': 'application/json' };
+      if (settings.apiKey) headers['Authorization'] = `Bearer ${settings.apiKey}`;
 
-    if (!res.ok) throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+      const res = await fetch(settings.proxyUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: settings.modelName || 'mistral-small-latest',
+          messages
+        }),
+        signal: abortController.signal
+      });
 
-    const data = await res.json();
-    const summary = data.choices?.[0]?.message?.content || '';
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+
+      const data = await res.json();
+      summary = data.choices?.[0]?.message?.content || '';
+    }
 
     if (summary) {
       const systemMsg = activeChat.messages.find(m => m.role === 'system');

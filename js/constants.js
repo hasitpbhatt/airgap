@@ -439,8 +439,6 @@ const AVAILABLE_TOOLS = [
 ];
 
 const LOCAL_TOOLS = new Set([
-  'fetch_url',
-  'search_web',
   'calculate',
   'get_current_time',
   'read_value',

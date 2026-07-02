@@ -198,15 +198,13 @@ test.describe('Local Engine', () => {
     const tools = await page.evaluate(() => {
       return Array.from(LOCAL_TOOLS);
     });
-    expect(tools).toContain('fetch_url');
-    expect(tools).toContain('search_web');
     expect(tools).toContain('calculate');
     expect(tools).toContain('get_current_time');
     expect(tools).toContain('read_value');
     expect(tools).toContain('list_stored_keys');
     expect(tools).toContain('notes_read');
     expect(tools).toContain('notes_list');
-    expect(tools.length).toBe(8);
+    expect(tools.length).toBe(6);
   });
 
   test('engine badge is hidden when remote mode', async ({ page }) => {
