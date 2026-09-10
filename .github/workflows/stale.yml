@@ -1,0 +1,27 @@
+name: Mark stale issues
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 90
+          days-before-close: 21
+          days-before-pr-stale: -1
+          stale-issue-message: >
+            This issue has been quiet for 90 days. It will close in 3 weeks
+            unless there is new activity. Comment to keep it open — that
+            alone counts as activity.
+          stale-issue-label: stale
+          exempt-issue-labels: security,pinned
+          operations-per-run: 30
+          remove-stale-when-updated: true
