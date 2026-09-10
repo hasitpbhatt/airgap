@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml/badge.svg)](https://github.com/hasitpbhatt/airgap/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://hasitpbhatt.github.io/airgap/)
+[![License: MIT](https://img.shields.io/github/license/hasitpbhatt/airgap)](LICENSE)
+[![Release](https://img.shields.io/github/v/tag/hasitpbhatt/airgap)](https://github.com/hasitpbhatt/airgap/releases)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 Your own AI agent. Your key. Your browser. Zero backend.
 
@@ -387,13 +390,36 @@ Set the **Tool Fetch Proxy URL** in settings to point to your own proxy endpoint
 ## Limitations
 
 - Voice input requires HTTPS (Web Speech API restriction)
-- `file://` blocks ES modules — app uses global-scope scripts
+- `file://` works except voice input, service worker, and the local engine (`local-engine.js` is an ES module — serve over HTTP for that)
 - Google blocks automated requests (HTTP 429) — use `search_web` tool instead
 - All state is localStorage — clearing browser data loses chats and memory
 - Internet required for initial page load (CDN content) and all LLM API calls
 - localStorage size limits vary by browser (~5-10 MB)
 - No encryption at rest (localStorage is unencrypted on disk)
 - Large conversations may hit per-model context limits (detailed in `CONTEXT_LIMITS` in `constants.js`)
+
+## FAQ / Troubleshooting
+
+**Blank page on first load?**
+Internet is required for the initial load (fonts, markdown/highlight/math libraries load from CDNs). Open DevTools (F12) → Console and look for blocked CDN requests.
+
+**Should I open `index.html` directly or serve it?**
+Opening directly (`file://`) works for remote-API chats. Serve it (`python3 -m http.server`) if you need voice input, notifications, or the local browser engine.
+
+**API error 401?**
+Your key is missing, wrong, or for a different provider than the configured URL. Check Settings → API Key and LLM API Proxy URL.
+
+**API error 429 / "Continue" button appeared?**
+Rate-limited (2+ consecutive errors) or the tool-call budget ran out. Wait a moment, then press **Continue** for 5 more rounds, or lower Max Tool Calls.
+
+**Replies stop making sense in long chats?**
+You hit context limits. Watch the token bar above the input; run `/compact` to summarize history, or start a new chat.
+
+**Chats or memory disappeared?**
+They live only in `localStorage` — clearing site data, private windows, or a different browser/profile starts empty. Export important conversations.
+
+**Search or fetch fails with 403/429?**
+The target or proxy throttled the request. `search_web` falls back across engines automatically; `fetch_url` backs off per domain and retries via the backup proxy if you set one.
 
 ## Privacy
 

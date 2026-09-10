@@ -2,7 +2,7 @@
   "name": "airgap",
   "version": "1.0.0",
   "description": "Every AI agent you've used reports to a server. airgap reports to you.",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "test": "playwright test",
     "lint": "eslint . && prettier --check .",
@@ -12,8 +12,18 @@
     "type": "git",
     "url": "git+https://github.com/hasitpbhatt/airgap.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "ai-agent",
+    "llm",
+    "chat",
+    "mistral",
+    "openai-compatible",
+    "browser",
+    "pwa",
+    "webllm",
+    "no-backend"
+  ],
+  "author": "Hasit Bhatt",
   "license": "MIT",
   "type": "commonjs",
   "bugs": {
