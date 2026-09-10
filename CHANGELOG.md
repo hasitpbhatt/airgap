@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Overhauled README with comprehensive project documentation
+- Renamed `opencode_*` localStorage keys and all user-visible strings to `airgap`; existing chats and settings migrate automatically on first load
 
 ## [1.0.0] — 2026-06-19
 

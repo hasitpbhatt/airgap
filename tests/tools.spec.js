@@ -187,7 +187,7 @@ test.describe('Tool execution — compact', () => {
       const result = await executeToolCall({
         function: { name: 'compact', arguments: '{"summary":"User asked about AI."}' }
       });
-      const chat = JSON.parse(localStorage.getItem('opencode_chats'))[0];
+      const chat = JSON.parse(localStorage.getItem('airgap_chats'))[0];
       return { result, chat };
     });
     expect(r.result.success).toBe(true);
@@ -201,9 +201,9 @@ test.describe('Tool execution — compact', () => {
 
   test('compact returns error when no active chat', async ({ page }) => {
     const r = await page.evaluate(async () => {
-      const saved = JSON.parse(localStorage.getItem('opencode_chats') || '[]');
+      const saved = JSON.parse(localStorage.getItem('airgap_chats') || '[]');
       if (saved.length > 0) {
-        localStorage.setItem('opencode_chats', JSON.stringify([]));
+        localStorage.setItem('airgap_chats', JSON.stringify([]));
         chats.length = 0;
       }
       return await executeToolCall({

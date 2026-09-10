@@ -20,7 +20,7 @@ test.describe('Local Engine', () => {
     await mockCdn(page);
     await clearStorage(page);
     await page.addInitScript((data) => {
-      localStorage.setItem('opencode_settings', JSON.stringify(data));
+      localStorage.setItem('airgap_settings', JSON.stringify(data));
     }, LOCAL_SETTINGS);
   });
 
@@ -209,7 +209,7 @@ test.describe('Local Engine', () => {
 
   test('engine badge is hidden when remote mode', async ({ page }) => {
     await page.addInitScript((data) => {
-      localStorage.setItem('opencode_settings', JSON.stringify(data));
+      localStorage.setItem('airgap_settings', JSON.stringify(data));
     }, { ...LOCAL_SETTINGS, engine: 'remote' });
 
     await page.goto(INDEX);
@@ -224,7 +224,7 @@ test.describe('Local Engine', () => {
 
   test('local settings group is hidden when remote mode', async ({ page }) => {
     await page.addInitScript((data) => {
-      localStorage.setItem('opencode_settings', JSON.stringify(data));
+      localStorage.setItem('airgap_settings', JSON.stringify(data));
     }, { ...LOCAL_SETTINGS, engine: 'remote' });
 
     await page.goto(INDEX);
@@ -303,7 +303,7 @@ test.describe('Local Engine', () => {
 
   test('engine toggle to local shows local settings', async ({ page }) => {
     await page.addInitScript((data) => {
-      localStorage.setItem('opencode_settings', JSON.stringify(data));
+      localStorage.setItem('airgap_settings', JSON.stringify(data));
     }, { ...LOCAL_SETTINGS, engine: 'remote' });
 
     await page.goto(INDEX);

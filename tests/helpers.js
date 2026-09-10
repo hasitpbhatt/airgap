@@ -62,7 +62,7 @@ async function seedSettings(page, overrides = {}) {
     customSystemPrompt: '',
   };
   await page.addInitScript((data) => {
-    localStorage.setItem('opencode_settings', JSON.stringify(data));
+    localStorage.setItem('airgap_settings', JSON.stringify(data));
   }, { ...defaults, ...overrides });
 }
 
@@ -78,8 +78,8 @@ async function seedChat(page, overrides = {}) {
     ...overrides,
   };
   await page.addInitScript((d) => {
-    localStorage.setItem('opencode_chats', JSON.stringify([d.chat]));
-    localStorage.setItem('opencode_current_chat_id', d.chatId);
+    localStorage.setItem('airgap_chats', JSON.stringify([d.chat]));
+    localStorage.setItem('airgap_current_chat_id', d.chatId);
   }, { chat, chatId });
 }
 

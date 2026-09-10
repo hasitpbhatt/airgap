@@ -1,7 +1,7 @@
 {
-  "name": "OpenCode Chat",
-  "short_name": "OpenCode",
-  "description": "Developer LLM interface with agentic tool calling",
+  "name": "airgap",
+  "short_name": "airgap",
+  "description": "Personal AI agent that runs entirely in your browser",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",

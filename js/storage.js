@@ -1,3 +1,27 @@
+// One-time migration of pre-rename `opencode_*` localStorage keys to `airgap_*`.
+// Runs at the top of init() before settings/chats load. Idempotent via flag.
+function migrateOpencodeKeys() {
+  try {
+    if (localStorage.getItem('airgap_key_migration_done')) return;
+    var pairs = [
+      ['opencode_settings', 'airgap_settings'],
+      ['opencode_chats', 'airgap_chats'],
+      ['opencode_current_chat_id', 'airgap_current_chat_id'],
+      ['opencode_settings_turns_migrated', 'airgap_settings_turns_migrated']
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var oldVal = localStorage.getItem(pairs[i][0]);
+      if (oldVal !== null && localStorage.getItem(pairs[i][1]) === null) {
+        localStorage.setItem(pairs[i][1], oldVal);
+      }
+      if (oldVal !== null) localStorage.removeItem(pairs[i][0]);
+    }
+    localStorage.setItem('airgap_key_migration_done', 'true');
+  } catch (e) {
+    console.error('Key migration failed', e);
+  }
+}
+
 // Per-conversation localStorage namespace for LLM storage tools
 function getStoragePrefix() {
   return 'llm_store_' + (currentChatId || 'default') + '_';

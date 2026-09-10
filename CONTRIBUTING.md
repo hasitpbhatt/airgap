@@ -23,7 +23,7 @@ Tests mock all network requests (CDN scripts, fonts, proxy) via `page.route()`. 
 
 - **Function declarations**, not arrow constants — ensures global scope via `<script>` tags
 - All state lives in `settings`, `chats`, `currentChatId` globals in `constants.js`
-- `localStorage` key prefixes: `opencode_`, `llm_store_`, `global_memory_`, `_fetch_cache_`, `_fetched_`
+- `localStorage` key prefixes: `airgap_`, `llm_store_`, `global_memory_`, `note_`, `_fetch_cache_`, `_fetched_`
 - Minimal comments; code should be self-documenting
 
 ## File structure

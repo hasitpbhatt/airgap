@@ -242,7 +242,7 @@ Three storage layers, all backed by `localStorage`:
 |-------|-------|-----------|-------------------|
 | **llmStore** | Per-chat | `llmStoreGet`, `llmStoreSet`, `llmStoreDelete`, `llmStoreListKeys` | `llm_store_<chatId>_` |
 | **globalStore** | Cross-chat | `globalStoreGet`, `globalStoreSet`, `globalStoreDelete`, `globalStoreClear`, `globalStoreListKeys` | `global_memory_` |
-| **noteStore** | Global notes | `noteStoreGet`, `noteStoreSet`, `noteStoreDelete`, `noteStoreListKeys` | `opencode_notes_` |
+| **noteStore** | Global notes | `noteStoreGet`, `noteStoreSet`, `noteStoreDelete`, `noteStoreListKeys` | `note_` |
 
 ## Memory management
 
@@ -322,7 +322,7 @@ Tests mock all network requests (CDN scripts, fonts, proxy) via `page.route()`. 
 
 - Functions use `function` keyword declarations (not arrow constants) — ensures global scope via `<script>` tags
 - All state lives in `settings`, `chats`, `currentChatId` globals in `constants.js`
-- localStorage keys: `opencode_settings`, `opencode_chats`, `opencode_current_chat_id`, `llm_store_<chatId>_*`, `global_memory_*`, `opencode_notes_*`, `_fetch_cache_*`, `_fetched_*`
+- localStorage keys: `airgap_settings`, `airgap_chats`, `airgap_current_chat_id`, `llm_store_<chatId>_*`, `global_memory_*`, `note_*`, `_fetch_cache_*`, `_fetched_*`
 - Minimal comments; code should be self-documenting
 
 ## Deployment

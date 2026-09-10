@@ -1,10 +1,10 @@
 // Save helpers
 function saveSettings() {
-  localStorage.setItem('opencode_settings', JSON.stringify(settings));
+  localStorage.setItem('airgap_settings', JSON.stringify(settings));
 }
 
 function saveChats() {
-  localStorage.setItem('opencode_chats', JSON.stringify(chats));
+  localStorage.setItem('airgap_chats', JSON.stringify(chats));
 }
 
 // Custom Tools Management
@@ -269,7 +269,7 @@ function createNewChat(initialPersona = null) {
   currentChatId = newChat.id;
 
   saveChats();
-  localStorage.setItem('opencode_current_chat_id', currentChatId);
+  localStorage.setItem('airgap_current_chat_id', currentChatId);
 
   renderChatList();
   selectChat(currentChatId);
@@ -277,7 +277,7 @@ function createNewChat(initialPersona = null) {
 
 function selectChat(id) {
   currentChatId = id;
-  localStorage.setItem('opencode_current_chat_id', id);
+  localStorage.setItem('airgap_current_chat_id', id);
 
   const activeChat = getActiveChat();
   if (!activeChat) return;
@@ -630,7 +630,7 @@ function renderWelcomeScreen() {
       <div class="welcome-logo">
         <i data-lucide="cpu"></i>
       </div>
-      <h2 class="welcome-title">OpenCode LLM Chat</h2>
+      <h2 class="welcome-title">airgap</h2>
       <p class="welcome-subtitle">Your conversations stay on your machine. Bring your own API key, choose a teaching persona below, and start — zero servers, zero signup, zero data leakage.</p>
 
       <h3 class="welcome-section-title">Select a Conversation Persona</h3>
@@ -755,7 +755,7 @@ function branchFromMessage(index) {
   chats.unshift(newChat);
   currentChatId = newChat.id;
   saveChats();
-  localStorage.setItem('opencode_current_chat_id', currentChatId);
+  localStorage.setItem('airgap_current_chat_id', currentChatId);
   renderChatList();
   selectChat(currentChatId);
 }

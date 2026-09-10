@@ -1,19 +1,21 @@
 // Initialization & Load from LocalStorage
 function init() {
+  migrateOpencodeKeys();
+
   // Setup default proxy
   settings.proxyUrl = getInitialProxyUrl();
 
   // Load Settings
-  const savedSettings = localStorage.getItem('opencode_settings');
+  const savedSettings = localStorage.getItem('airgap_settings');
   if (savedSettings) {
     try {
       settings = { ...settings, ...JSON.parse(savedSettings) };
       if (settings.proxyUrl === 'http://localhost:8080/v1/chat/completions' || settings.proxyUrl === 'https://quiz-ai-proxy.hasit-p-bhatt.workers.dev/') {
         settings.proxyUrl = 'https://api.mistral.ai/v1/chat/completions';
       }
-      if (!localStorage.getItem('opencode_settings_turns_migrated')) {
+      if (!localStorage.getItem('airgap_settings_turns_migrated')) {
         settings.useMaxTurns = false;
-        localStorage.setItem('opencode_settings_turns_migrated', 'true');
+        localStorage.setItem('airgap_settings_turns_migrated', 'true');
         saveSettings();
       }
     } catch (e) {
@@ -205,7 +207,7 @@ function init() {
   });
 
   // Load Chats
-  const savedChats = localStorage.getItem('opencode_chats');
+  const savedChats = localStorage.getItem('airgap_chats');
   if (savedChats) {
     try {
       chats = JSON.parse(savedChats);
@@ -215,7 +217,7 @@ function init() {
     }
   }
 
-  currentChatId = localStorage.getItem('opencode_current_chat_id');
+  currentChatId = localStorage.getItem('airgap_current_chat_id');
   if (chats.length === 0) {
     createNewChat();
   } else {

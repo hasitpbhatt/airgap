@@ -42,7 +42,7 @@ test.describe('Chat CRUD', () => {
     const r = await page.evaluate(() => {
       chats.splice(0, 1);
       saveChats();
-      const saved = JSON.parse(localStorage.getItem('opencode_chats') || '[]');
+      const saved = JSON.parse(localStorage.getItem('airgap_chats') || '[]');
       return { emptyAfterDelete: saved.length === 0 };
     });
     expect(r.emptyAfterDelete).toBe(true);
@@ -598,7 +598,7 @@ test.describe('UI Rendering', () => {
       };
     });
     expect(r.welcomeText).toBeTruthy();
-    expect(r.welcomeText).toContain('OpenCode LLM Chat');
+    expect(r.welcomeText).toContain('airgap');
   });
 
   test('renderChatFeed renders user and assistant messages', async ({ page }) => {
