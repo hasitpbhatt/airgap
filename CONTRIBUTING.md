@@ -34,21 +34,28 @@ index.html ──┬── style.css
              ├── icon.svg
              ├── worker.js          Cloudflare Worker source (deploy separately)
              └── js/ ──┬── constants.js    Tool definitions, state, DOM refs
-                       ├── utils.js        Rendering, encoding, helpers
-                       ├── storage.js      localStorage abstraction
+                       ├── utils.js        Rendering, encoding, helpers, TTS
+                       ├── storage.js      localStorage abstraction, key migration
                        ├── chat.js         Chat CRUD, feed rendering
-                       ├── tools.js        15 tool implementations
+                       ├── tools-core.js   Output tools (clipboard, file, chart, notify)
+                       ├── tools-fetch.js  fetch_url, search_web, read_rss
+                       ├── tools-github.js GitHub API tools
+                       ├── tools-storage.js Memory, notes, per-chat storage tools
+                       ├── tools-misc.js   Math, time, settings, compact tools
+                       ├── tools.js        Dispatch (executeToolCall) + tool-call UI
+                       ├── local-engine.js In-browser LLM via WebLLM (ES module)
                        ├── sender.js       API calls, agent loop, pruning
                        └── events.js       Init, event binding, ?k= param
 ```
 
-Load order is sequential via `<script>` tags (no ES modules — `file://` blocks them). All files share global scope.
+Load order is sequential via `<script>` tags. All files share global scope, except `local-engine.js`, which is an ES module (importmap) and only loads from served origins — unavailable on `file://`.
 
 ## Adding a new tool
 
-1. Add the tool definition to `AVAILABLE_TOOLS` in `js/constants.js`
-2. Add a `case` to the `switch` in `executeToolCall` in `js/tools.js`
-3. Add tests in `tests/airgap.spec.js`
+1. Add the tool definition to `AVAILABLE_TOOLS` in `js/constants.js` (and to `LOCAL_TOOLS` if the local engine should offer it)
+2. Add the handler in the matching `js/tools-*.js` domain file
+3. Add a `case` to the `switch` in `executeToolCall` in `js/tools.js`
+4. Add tests in the matching spec under `tests/` (`tools.spec.js` for most tools)
 
 ## Testing proxy responses
 

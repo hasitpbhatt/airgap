@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Local browser engine (BETA): run Qwen2.5 0.5B/1.5B fully in-browser via WebLLM, with tool loop, offline model loading, and engine badge/settings UI
+- GitHub integration tools: `github_get_contents`, `github_create_or_update_file`, `github_create_pr`, `github_create_issue` via direct API calls with a session-only token
+- Text-to-speech output for assistant messages (Web Speech synthesis, optional Voxtral API endpoint)
+- Slash commands: `/new`, `/export [format]`, `/persona <name>` (plus `/compact`, `/clear`) with a `/` autocomplete menu
+- File attachments (images, PDFs, code, text) including drag-and-drop
+- In-conversation search (`Ctrl+F`) and global search across all conversations
+- Conversation branching, custom user-defined tools, token counter with context bar and cost breakdown
+- About modal, GitHub Pages demo deploy, mobile responsive tweaks
+- Resilient web search (SearXNG-first with proxy fallback chain), context-window guard for oversized fetch results
 - Issue/PR templates and .editorconfig for consistent contributor experience
 - CODE_OF_CONDUCT.md (Contributor Covenant v2.1) and SECURITY.md
 - Screenshot of chat UI in README

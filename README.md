@@ -19,7 +19,7 @@ Designed for developers and technical professionals who want full stack visibili
 
 - **Engineers in regulated industries** — fintech, healthcare, legal, defense. You need AI assistance but can't send data to third-party chat platforms. Airgap routes directly to your LLM provider — no intermediate server stores or inspects your conversations.
 - **API-key power users** — you already have Mistral, OpenAI, or Groq credits. You want agentic tools without a monthly subscription on top. Airgap is free: the cost is only what your API provider charges.
-- **Indie developers and tinkerers** — you want to understand, customize, and extend your AI agent. The entire codebase is 7 JS files (no build step, no framework). `git clone`, open `index.html`, start hacking.
+- **Indie developers and tinkerers** — you want to understand, customize, and extend your AI agent. The entire app is 13 JS files (no build step, no framework). `git clone`, open `index.html`, start hacking.
 
 If you use ChatGPT or Claude and are happy with it, keep using it. Airgap is for when you need *your own instance* — fully transparent, fully controllable, no platform dependency.
 
@@ -38,6 +38,14 @@ If you use ChatGPT or Claude and are happy with it, keep using it. Airgap is for
 - **Conversation compaction** — Auto-prunes at 15 messages via `/compact` to stay within context limits
 - **Export** — Download conversations as JSON, Markdown, or Plain Text
 - **Voice input** — Speech-to-text via Web Speech API (HTTPS required)
+- **Text-to-speech** — Read assistant messages aloud (Web Speech synthesis, optional Voxtral API endpoint)
+- **Local browser engine (BETA)** — Run Qwen2.5 (0.5B/1.5B) fully in-browser via WebLLM; no API key needed
+- **GitHub integration** — Read files, create/update files, open PRs and issues (session-only token)
+- **File attachments** — Attach images, PDFs, code, and text files, including drag-and-drop
+- **Search** — In-conversation search (`Ctrl+F`) plus global search across all conversations
+- **Branching** — Fork a conversation to explore alternate paths
+- **Custom tools** — Define extra function-calling tools sent alongside the built-ins
+- **Token counter** — Per-message tokens, context usage bar, and cost estimate
 - **PWA** — Add to Home Screen on supported browsers
 
 ## Quick start
@@ -72,7 +80,7 @@ Type `/` in the chat textarea to see available commands:
 | **Browser** | Chrome, Firefox, Safari, Edge (recent 2 major versions) |
 | **Internet** | Required for initial page load (CDN dependencies) and all LLM API calls |
 | **HTTPS** | Required for voice input (Web Speech API) and Service Worker notifications |
-| **`file://`** | Works, but no voice input, no service worker, no ES modules (app uses global-scope scripts) |
+| **`file://`** | Works, but no voice input, no service worker, no local engine (`local-engine.js` is an ES module) |
 | **localStorage** | All state persisted here — clearing browser data loses chats and memory |
 
 ### Supported LLM providers
@@ -89,6 +97,14 @@ Any OpenAI-compatible `/v1/chat/completions` endpoint. Tested with:
 
 Set the **LLM API Proxy URL** in settings to point to your provider.
 
+### Local browser engine (BETA)
+
+Set **Engine** to `Local Browser` to run Qwen2.5 (`qwen2.5-0.5b` ~310 MB, `qwen2.5-1.5b` ~950 MB) fully in-browser via [WebLLM](https://webllm.mlc.ai/). No API key needed; the model downloads once and is cached in browser storage.
+
+- Requires a served origin (`python3 -m http.server`), WebGPU (Chrome/Edge 113+; CPU/WASM fallback elsewhere)
+- Supports a 6-tool subset: `calculate`, `get_current_time`, `read_value`, `list_stored_keys`, `notes_read`, `notes_list`
+- Network tools (`fetch_url`, `search_web`, `read_rss`) and compaction need connectivity regardless of engine
+
 ## Architecture
 
 ```
@@ -97,15 +113,21 @@ index.html ──┬── style.css
              ├── icon.svg
              ├── worker.js          Cloudflare Worker source (deploy separately)
              └── js/ ──┬── constants.js    Tool definitions, state, DOM refs
-                       ├── utils.js        Rendering, encoding, helpers
-                       ├── storage.js      localStorage abstraction
+                       ├── utils.js        Rendering, encoding, helpers, TTS
+                       ├── storage.js      localStorage abstraction, key migration
                        ├── chat.js         Chat CRUD, feed rendering
-                       ├── tools.js        24 tool implementations
+                       ├── tools-core.js   Output tools (clipboard, file, chart, notify)
+                       ├── tools-fetch.js  fetch_url, search_web, read_rss
+                       ├── tools-github.js GitHub API tools
+                       ├── tools-storage.js Memory, notes, per-chat storage tools
+                       ├── tools-misc.js   Math, time, settings, compact tools
+                       ├── tools.js        Dispatch (executeToolCall) + tool-call UI
+                       ├── local-engine.js In-browser LLM via WebLLM (ES module)
                        ├── sender.js       API calls, agent loop, pruning
                        └── events.js       Init, event binding, ?k= param
 ```
 
-Load order is sequential via `<script>` tags (no ES modules — `file://` blocks them). All files share global scope.
+Load order is sequential via `<script>` tags. All files share global scope, except `local-engine.js`, which is an ES module (importmap) and only loads from served origins — unavailable on `file://`.
 
 ```
                   ┌─────────────────┐
@@ -137,6 +159,8 @@ Load order is sequential via `<script>` tags (no ES modules — `file://` blocks
 | Tool Fetch Proxy URL | `https://airgap-fetch.gitub.workers.dev/` | Primary web fetch endpoint |
 | Backup Fetch Proxy URL | — | Optional fallback if primary proxy fails |
 | API Key | — | Stored in localStorage only |
+| GitHub Token | — | Session only, never stored; requires `repo` scope |
+| Engine | Remote API | Remote API or Local Browser (BETA) |
 | Model | `mistral-small-latest` | Preset or custom model name |
 | System Persona | General | 6 templates or custom prompt |
 | Enable Turns Limit | Off | Limits conversation to N rounds of user+assistant turns |
@@ -184,7 +208,7 @@ Each message can trigger up to **5 chained tool calls** (configurable 1–30). T
 
 The loop stops when the agent returns a text response or reaches the configured limit. When paused, a **Continue** button appears to grant 5 additional rounds. The loop also pauses early on 2+ consecutive errors (e.g., HTTP 429) or 3+ repeated calls to the same tool, preventing token waste.
 
-## 24 tools
+## 27 tools
 
 | Tool | Description |
 |------|-------------|
@@ -211,6 +235,10 @@ The loop stops when the agent returns a text response or reaches the configured 
 | `recall` | Global cross-chat memory: retrieve (exact + substring) |
 | `forget` | Global cross-chat memory: delete single key |
 | `forget_all` | Global cross-chat memory: delete all |
+| `github_get_contents` | Read a repo file (or directory) via the GitHub API |
+| `github_create_or_update_file` | Create or update a repo file (needs file `sha` for updates) |
+| `github_create_pr` | Open a pull request (supports drafts) |
+| `github_create_issue` | Open an issue, optionally with labels and assignees |
 
 ### Search engine fallback chain
 
@@ -228,7 +256,7 @@ The first engine to return results wins.
 
 `fetch_url` tracks HTTP 429 responses per domain. When a domain returns 429 with a `retry_after` value, the tool auto-blocks that domain and retries via the backup proxy URL.
 
-Tools are defined in `js/constants.js` and implemented in `js/tools.js`. Adding a new tool takes one entry in `AVAILABLE_TOOLS` and one `case` in the dispatch.
+Tools are defined in `js/constants.js` (`AVAILABLE_TOOLS`, plus the `LOCAL_TOOLS` subset for the local engine) and implemented in the `js/tools-*.js` domain files. Adding a new tool takes one entry in `AVAILABLE_TOOLS`, one `case` in `executeToolCall` in `js/tools.js`, and one handler in the matching domain file. GitHub tools additionally require a session-only token (Settings → GitHub Token).
 
 ## Transparent fetch cache
 
@@ -308,12 +336,14 @@ npx playwright install chromium
 npm test
 ```
 
-Test suite covers 6 spec files across categories:
+Test suite covers 7 spec files across categories:
 - **chat.spec.js** — Chat CRUD, rendering, streaming, auto-pruning
 - **connect.spec.js** — API key entry, URL injection, share link
-- **tools.spec.js** — All 24 tool implementations, proxy formats, error handling
+- **tools.spec.js** — All 27 tool implementations, proxy formats, error handling
 - **edge-cases.spec.js** — Export, rapid messaging, empty states, URL corner cases
 - **utils.spec.js** — XOR encoding/decoding, legacy format compatibility
+- **local-engine.spec.js** — In-browser engine, model config, tool parsing
+- **migration.spec.js** — `opencode_*` → `airgap_*` key migration
 - **helpers.js** — Test utilities (not a spec file)
 
 Tests mock all network requests (CDN scripts, fonts, proxy) via `page.route()`. No real API server needed.
