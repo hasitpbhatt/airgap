@@ -18,10 +18,10 @@ Do **not** open public issues. Follow [SECURITY.md](SECURITY.md) instead.
 
 ## Supported versions
 
-| Version | Supported |
-|---------|-----------|
-| latest `main` / latest release | ✅ |
-| older releases | Best-effort; please reproduce on latest first |
+| Version                        | Supported                                     |
+| ------------------------------ | --------------------------------------------- |
+| latest `main` / latest release | ✅                                            |
+| older releases                 | Best-effort; please reproduce on latest first |
 
 Supported browsers: recent 2 major versions of Chrome, Firefox, Safari, Edge.
 The local browser engine additionally needs WebGPU (Chrome/Edge 113+) and a

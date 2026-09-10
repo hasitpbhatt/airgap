@@ -25,7 +25,6 @@ test.describe('Chat CRUD', () => {
       createNewChat();
     });
     const r = await page.evaluate(() => {
-      const toDelete = chats[0].id;
       chats.splice(0, 1);
       saveChats();
       if (chats.length > 0) selectChat(chats[0].id);
@@ -399,7 +398,6 @@ test.describe('Sender API', () => {
     await page.waitForSelector('#sidebar');
 
     await page.evaluate(async () => {
-      const bubbleCountBefore = document.querySelectorAll('.message-row.assistant').length;
       await triggerSendAPI();
       const assistantRowsAfter = document.querySelectorAll('.message-row.assistant');
       const finalBubble = assistantRowsAfter[assistantRowsAfter.length - 1];

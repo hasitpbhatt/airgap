@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { INDEX, mockCdn, clearStorage, seedSettings, seedChat, mockFetchProxy, mockFetchProxyRaw } = require('./helpers');
+const { INDEX, mockCdn, clearStorage, seedSettings } = require('./helpers');
 
 test.describe('Edge cases', () => {
   test.beforeEach(async ({ page }) => {
@@ -407,18 +407,14 @@ test.describe('Slash command menu', () => {
   });
 
   test('/export json downloads conversation', async ({ page }) => {
-    let downloaded = false;
-    await page.route('**/*', (route) => {
-      if (route.request().url().startsWith('blob:')) {
-        downloaded = true;
-      }
-      route.continue();
-    });
+    const downloadPromise = page.waitForEvent('download');
     await page.evaluate(() => {
       const ta = document.getElementById('chat-textarea');
       ta.value = '/export json';
       triggerSend();
     });
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.json$/);
     const chatCount = await page.evaluate(() => document.querySelectorAll('.chat-item').length);
     expect(chatCount).toBeGreaterThanOrEqual(1);
     const taVal = await page.evaluate(() => document.getElementById('chat-textarea').value);

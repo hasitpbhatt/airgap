@@ -9,8 +9,8 @@ An autonomous AI agent that runs entirely in your browser. Bring your own API ke
 
 Designed for developers and technical professionals who want full stack visibility, no data leakage to third-party platforms, and no monthly paywall.
 
-| 🛡️ Local by design | 🔌 Bring your own key | 📁 One HTML file |
-|---|---|---|
+| 🛡️ Local by design                                                                   | 🔌 Bring your own key                                                                   | 📁 One HTML file                                                                               |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Messages, keys, and context stay in your browser — no user data leaves your machine. | Works with Mistral, OpenAI, or any OpenAI-compatible API. You control where queries go. | One file, no backend. UI icons and rendering load from public CDNs — libraries, not telemetry. |
 
 ![airgap screenshot](screenshot.png)
@@ -21,7 +21,7 @@ Designed for developers and technical professionals who want full stack visibili
 - **API-key power users** — you already have Mistral, OpenAI, or Groq credits. You want agentic tools without a monthly subscription on top. Airgap is free: the cost is only what your API provider charges.
 - **Indie developers and tinkerers** — you want to understand, customize, and extend your AI agent. The entire app is 13 JS files (no build step, no framework). `git clone`, open `index.html`, start hacking.
 
-If you use ChatGPT or Claude and are happy with it, keep using it. Airgap is for when you need *your own instance* — fully transparent, fully controllable, no platform dependency.
+If you use ChatGPT or Claude and are happy with it, keep using it. Airgap is for when you need _your own instance_ — fully transparent, fully controllable, no platform dependency.
 
 ## Features
 
@@ -65,23 +65,23 @@ Web access uses a Cloudflare Worker (default) or any CORS proxy you configure. S
 
 Type `/` in the chat textarea to see available commands:
 
-| Command | Action |
-|---------|--------|
-| `/compact` | Compress conversation history to stay within context limits |
-| `/clear` | Clear current conversation |
-| `/new` | Start a new conversation |
-| `/export [format]` | Download conversation as `json` (default), `md`, or `txt` |
-| `/persona <name>` | Switch persona: `general`, `child`, `deep`, `first-principles`, `socratic` |
+| Command            | Action                                                                     |
+| ------------------ | -------------------------------------------------------------------------- |
+| `/compact`         | Compress conversation history to stay within context limits                |
+| `/clear`           | Clear current conversation                                                 |
+| `/new`             | Start a new conversation                                                   |
+| `/export [format]` | Download conversation as `json` (default), `md`, or `txt`                  |
+| `/persona <name>`  | Switch persona: `general`, `child`, `deep`, `first-principles`, `socratic` |
 
 ## System requirements
 
-| Requirement | Details |
-|---|---|
-| **Browser** | Chrome, Firefox, Safari, Edge (recent 2 major versions) |
-| **Internet** | Required for initial page load (CDN dependencies) and all LLM API calls |
-| **HTTPS** | Required for voice input (Web Speech API) and Service Worker notifications |
-| **`file://`** | Works, but no voice input, no service worker, no local engine (`local-engine.js` is an ES module) |
-| **localStorage** | All state persisted here — clearing browser data loses chats and memory |
+| Requirement      | Details                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| **Browser**      | Chrome, Firefox, Safari, Edge (recent 2 major versions)                                           |
+| **Internet**     | Required for initial page load (CDN dependencies) and all LLM API calls                           |
+| **HTTPS**        | Required for voice input (Web Speech API) and Service Worker notifications                        |
+| **`file://`**    | Works, but no voice input, no service worker, no local engine (`local-engine.js` is an ES module) |
+| **localStorage** | All state persisted here — clearing browser data loses chats and memory                           |
 
 ### Supported LLM providers
 
@@ -153,27 +153,29 @@ Load order is sequential via `<script>` tags. All files share global scope, exce
 
 ### Settings panel
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| LLM API Proxy URL | `https://api.mistral.ai/v1/chat/completions` | Any OpenAI-compatible API |
-| Tool Fetch Proxy URL | `https://airgap-fetch.gitub.workers.dev/` | Primary web fetch endpoint |
-| Backup Fetch Proxy URL | — | Optional fallback if primary proxy fails |
-| API Key | — | Stored in localStorage only |
-| GitHub Token | — | Session only, never stored; requires `repo` scope |
-| Engine | Remote API | Remote API or Local Browser (BETA) |
-| Model | `mistral-small-latest` | Preset or custom model name |
-| System Persona | General | 6 templates or custom prompt |
-| Enable Turns Limit | Off | Limits conversation to N rounds of user+assistant turns |
-| Max Turns | 5 | Only active when turns limit is enabled |
-| Enable Tool Call Limit | On | Limits tool calls per message to N rounds |
-| Max Tool Calls | 5 | Only active when tool call limit is enabled; range 1–30 |
+| Field                  | Default                                      | Description                                             |
+| ---------------------- | -------------------------------------------- | ------------------------------------------------------- |
+| LLM API Proxy URL      | `https://api.mistral.ai/v1/chat/completions` | Any OpenAI-compatible API                               |
+| Tool Fetch Proxy URL   | `https://airgap-fetch.gitub.workers.dev/`    | Primary web fetch endpoint                              |
+| Backup Fetch Proxy URL | —                                            | Optional fallback if primary proxy fails                |
+| API Key                | —                                            | Stored in localStorage only                             |
+| GitHub Token           | —                                            | Session only, never stored; requires `repo` scope       |
+| Engine                 | Remote API                                   | Remote API or Local Browser (BETA)                      |
+| Model                  | `mistral-small-latest`                       | Preset or custom model name                             |
+| System Persona         | General                                      | 6 templates or custom prompt                            |
+| Enable Turns Limit     | Off                                          | Limits conversation to N rounds of user+assistant turns |
+| Max Turns              | 5                                            | Only active when turns limit is enabled                 |
+| Enable Tool Call Limit | On                                           | Limits tool calls per message to N rounds               |
+| Max Tool Calls         | 5                                            | Only active when tool call limit is enabled; range 1–30 |
 
 ### Environment injection
 
 When deploying to a static host (Netlify, Vercel, etc.), you can inject a proxy URL via a global variable:
 
 ```html
-<script>var MISTRAL_PROXY_URL = 'https://your-proxy.com/v1/chat/completions';</script>
+<script>
+  var MISTRAL_PROXY_URL = 'https://your-proxy.com/v1/chat/completions';
+</script>
 ```
 
 This is checked by `getInitialProxyUrl()` in `constants.js` before falling back to the default.
@@ -210,35 +212,35 @@ The loop stops when the agent returns a text response or reaches the configured 
 
 ## 27 tools
 
-| Tool | Description |
-|------|-------------|
-| `fetch_url` | Fetch any URL via proxy (with caching and domain rate-limit handling) |
-| `search_web` | Parallel search across SearXNG, DuckDuckGo, Ecosia, Bing, Brave |
-| `read_rss` | Parse RSS 2.0 / Atom / RSS 1.0 feeds |
-| `save_file` | Create a file and offer it as a browser download |
-| `generate_chart` | Render a bar, line, or pie chart from data |
-| `clipboard_write` | Write text to the clipboard (triggers on user click) |
-| `send_notification` | Send a system/desktop notification |
-| `set_setting` | Update a chat setting (proxyUrl, modelName, persona) |
-| `notes_create` | Create or overwrite a global note |
-| `notes_read` | Read a single note by key |
-| `notes_list` | List all notes, optionally filtered by query |
-| `notes_delete` | Delete a single note by key |
-| `store_value` | Per-chat persistent key-value storage |
-| `read_value` | Retrieve per-chat stored value |
-| `list_stored_keys` | List all keys in current chat |
-| `delete_value` | Remove a per-chat stored value |
-| `compact` | Summarize and compress conversation history |
-| `get_current_time` | Current date, time, timezone |
-| `calculate` | Evaluate math expressions (Math.* supported) |
-| `remember` | Global cross-chat memory: store |
-| `recall` | Global cross-chat memory: retrieve (exact + substring) |
-| `forget` | Global cross-chat memory: delete single key |
-| `forget_all` | Global cross-chat memory: delete all |
-| `github_get_contents` | Read a repo file (or directory) via the GitHub API |
-| `github_create_or_update_file` | Create or update a repo file (needs file `sha` for updates) |
-| `github_create_pr` | Open a pull request (supports drafts) |
-| `github_create_issue` | Open an issue, optionally with labels and assignees |
+| Tool                           | Description                                                           |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `fetch_url`                    | Fetch any URL via proxy (with caching and domain rate-limit handling) |
+| `search_web`                   | Parallel search across SearXNG, DuckDuckGo, Ecosia, Bing, Brave       |
+| `read_rss`                     | Parse RSS 2.0 / Atom / RSS 1.0 feeds                                  |
+| `save_file`                    | Create a file and offer it as a browser download                      |
+| `generate_chart`               | Render a bar, line, or pie chart from data                            |
+| `clipboard_write`              | Write text to the clipboard (triggers on user click)                  |
+| `send_notification`            | Send a system/desktop notification                                    |
+| `set_setting`                  | Update a chat setting (proxyUrl, modelName, persona)                  |
+| `notes_create`                 | Create or overwrite a global note                                     |
+| `notes_read`                   | Read a single note by key                                             |
+| `notes_list`                   | List all notes, optionally filtered by query                          |
+| `notes_delete`                 | Delete a single note by key                                           |
+| `store_value`                  | Per-chat persistent key-value storage                                 |
+| `read_value`                   | Retrieve per-chat stored value                                        |
+| `list_stored_keys`             | List all keys in current chat                                         |
+| `delete_value`                 | Remove a per-chat stored value                                        |
+| `compact`                      | Summarize and compress conversation history                           |
+| `get_current_time`             | Current date, time, timezone                                          |
+| `calculate`                    | Evaluate math expressions (Math.* supported)                          |
+| `remember`                     | Global cross-chat memory: store                                       |
+| `recall`                       | Global cross-chat memory: retrieve (exact + substring)                |
+| `forget`                       | Global cross-chat memory: delete single key                           |
+| `forget_all`                   | Global cross-chat memory: delete all                                  |
+| `github_get_contents`          | Read a repo file (or directory) via the GitHub API                    |
+| `github_create_or_update_file` | Create or update a repo file (needs file `sha` for updates)           |
+| `github_create_pr`             | Open a pull request (supports drafts)                                 |
+| `github_create_issue`          | Open an issue, optionally with labels and assignees                   |
 
 ### Search engine fallback chain
 
@@ -266,11 +268,11 @@ Tools are defined in `js/constants.js` (`AVAILABLE_TOOLS`, plus the `LOCAL_TOOLS
 
 Three storage layers, all backed by `localStorage`:
 
-| Layer | Scope | Functions | localStorage prefix |
-|-------|-------|-----------|-------------------|
-| **llmStore** | Per-chat | `llmStoreGet`, `llmStoreSet`, `llmStoreDelete`, `llmStoreListKeys` | `llm_store_<chatId>_` |
-| **globalStore** | Cross-chat | `globalStoreGet`, `globalStoreSet`, `globalStoreDelete`, `globalStoreClear`, `globalStoreListKeys` | `global_memory_` |
-| **noteStore** | Global notes | `noteStoreGet`, `noteStoreSet`, `noteStoreDelete`, `noteStoreListKeys` | `note_` |
+| Layer           | Scope        | Functions                                                                                          | localStorage prefix   |
+| --------------- | ------------ | -------------------------------------------------------------------------------------------------- | --------------------- |
+| **llmStore**    | Per-chat     | `llmStoreGet`, `llmStoreSet`, `llmStoreDelete`, `llmStoreListKeys`                                 | `llm_store_<chatId>_` |
+| **globalStore** | Cross-chat   | `globalStoreGet`, `globalStoreSet`, `globalStoreDelete`, `globalStoreClear`, `globalStoreListKeys` | `global_memory_`      |
+| **noteStore**   | Global notes | `noteStoreGet`, `noteStoreSet`, `noteStoreDelete`, `noteStoreListKeys`                             | `note_`               |
 
 ## Memory management
 
@@ -286,40 +288,40 @@ This is the UI counterpart to the `remember` / `recall` / `forget` / `forget_all
 
 Conversations can be exported in three formats from the header bar:
 
-| Format | Extension | Content |
-|--------|-----------|---------|
-| JSON | `.json` | Full conversation object (including system prompt, metadata) |
-| Markdown | `.md` | Formatted markdown with user/assistant labels |
-| Plain Text | `.txt` | Plain text transcript |
+| Format     | Extension | Content                                                      |
+| ---------- | --------- | ------------------------------------------------------------ |
+| JSON       | `.json`   | Full conversation object (including system prompt, metadata) |
+| Markdown   | `.md`     | Formatted markdown with user/assistant labels                |
+| Plain Text | `.txt`    | Plain text transcript                                        |
 
 ## Keyboard shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Send message |
-| `Shift` + `Enter` | New line |
-| `?` | Toggle shortcuts panel |
-| `Esc` | Close panel / Cancel editing |
-| `Ctrl` + `N` | New conversation |
-| `Ctrl` + `B` | Toggle sidebar |
+| Key               | Action                       |
+| ----------------- | ---------------------------- |
+| `Enter`           | Send message                 |
+| `Shift` + `Enter` | New line                     |
+| `?`               | Toggle shortcuts panel       |
+| `Esc`             | Close panel / Cancel editing |
+| `Ctrl` + `N`      | New conversation             |
+| `Ctrl` + `B`      | Toggle sidebar               |
 
 ## User commands
 
-| Command | Action |
-|---------|--------|
-| `/compact` | Summarize and trim history |
-| `/clear` | Reset messages, keep system prompt |
+| Command    | Action                             |
+| ---------- | ---------------------------------- |
+| `/compact` | Summarize and trim history         |
+| `/clear`   | Reset messages, keep system prompt |
 
 ## External dependencies
 
 The app loads the following libraries from CDNs on page load. Internet is required for initial rendering even when running from `file://`.
 
-| Library | Purpose | Source |
-|---------|---------|--------|
-| [marked.js](https://marked.js.org/) | Markdown rendering | jsDelivr |
-| [Prism.js](https://prismjs.com/) | Syntax highlighting | Cloudflare |
-| [KaTeX](https://katex.org/) | LaTeX equation rendering | jsDelivr |
-| [Lucide](https://lucide.dev/) | UI icons | unpkg |
+| Library                             | Purpose                  | Source     |
+| ----------------------------------- | ------------------------ | ---------- |
+| [marked.js](https://marked.js.org/) | Markdown rendering       | jsDelivr   |
+| [Prism.js](https://prismjs.com/)    | Syntax highlighting      | Cloudflare |
+| [KaTeX](https://katex.org/)         | LaTeX equation rendering | jsDelivr   |
+| [Lucide](https://lucide.dev/)       | UI icons                 | unpkg      |
 
 Chart rendering uses the Canvas 2D API directly — no charting library.
 
@@ -337,6 +339,7 @@ npm test
 ```
 
 Test suite covers 7 spec files across categories:
+
 - **chat.spec.js** — Chat CRUD, rendering, streaming, auto-pruning
 - **connect.spec.js** — API key entry, URL injection, share link
 - **tools.spec.js** — All 27 tool implementations, proxy formats, error handling
@@ -401,7 +404,7 @@ Conversations go directly to the LLM API you configure. No data passes through a
 - **No servers** — the HTML file is the app
 - **No third-party platform** — your conversations are never stored or inspected by a cloud intermediary
 
-> ⚠️ Your LLM provider (Mistral, OpenAI, etc.) still processes the messages you send them — that's the nature of using a remote API. Airgap removes the *additional* risk of a middleman platform. For full air-gap, pair with a local LLM via any OpenAI-compatible endpoint (llama.cpp, Ollama, vLLM).
+> ⚠️ Your LLM provider (Mistral, OpenAI, etc.) still processes the messages you send them — that's the nature of using a remote API. Airgap removes the _additional_ risk of a middleman platform. For full air-gap, pair with a local LLM via any OpenAI-compatible endpoint (llama.cpp, Ollama, vLLM).
 
 The entire codebase is open source.
 

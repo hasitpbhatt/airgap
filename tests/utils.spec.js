@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { INDEX, mockCdn, clearStorage, seedSettings } = require('./helpers');
+const { INDEX, mockCdn, seedSettings } = require('./helpers');
 
 test.describe('Utility functions', () => {
   test.beforeEach(async ({ page }) => {

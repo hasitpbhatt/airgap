@@ -17,6 +17,16 @@ npx playwright install chromium
 npm test
 ```
 
+```bash
+npm run lint    # ESLint (JS correctness) + Prettier (markdown/YAML/JSON)
+npm run format  # auto-format markdown/YAML/JSON
+```
+
+JS, HTML, and CSS keep house style (see `.prettierignore`) — ESLint checks
+correctness (`no-undef` against the documented cross-file globals in
+`eslint.config.js`), not formatting. When adding shared globals, declare them
+there.
+
 Tests mock all network requests (CDN scripts, fonts, proxy) via `page.route()`. No real API server needed.
 
 ## Code conventions

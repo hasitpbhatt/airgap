@@ -545,8 +545,6 @@ test.describe('Tool execution — github tools', () => {
     await page.route('**/api.github.com/**', async (route) => {
       const url = route.request().url();
       const method = route.request().method();
-      const owner = 'testuser';
-      const repo = 'testrepo';
 
       if (url.includes('/contents/') && method === 'GET') {
         if (url.includes('README.md')) {
@@ -574,7 +572,6 @@ test.describe('Tool execution — github tools', () => {
       }
 
       if (url.includes('/contents/') && method === 'PUT') {
-        const body = JSON.parse(route.request().postData() || '{}');
         return route.fulfill({
           contentType: 'application/json',
           body: JSON.stringify({

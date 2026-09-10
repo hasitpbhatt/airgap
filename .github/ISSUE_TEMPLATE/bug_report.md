@@ -10,6 +10,7 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **To reproduce**
+
 1. Open `index.html` in…
 2. Configure API key for…
 3. Send message "…"
@@ -22,6 +23,7 @@ What did you expect to happen?
 If applicable, add screenshots to help explain your problem.
 
 **Environment**
+
 - Browser and version: [e.g. Chrome 125, Firefox 128, Safari 17]
 - OS: [e.g. Windows 11, macOS 14, Ubuntu 24.04]
 - Serving method: [`file://` or HTTPS URL]
@@ -34,6 +36,7 @@ paste errors here
 ```
 
 **API configuration**
+
 - Provider: [e.g. Mistral AI, OpenAI, Groq]
 - Model: [e.g. mistral-large-latest, gpt-4o]
 - Fetch proxy URL: [e.g. the Cloudflare Worker or custom proxy]

@@ -22,7 +22,7 @@ below were current when this was written and may have shifted.
 ## Next
 
 - **Text-to-speech completion (#21)** — output plumbing exists (Web Speech
-  + optional Voxtral endpoint); remaining work is polish and provider UX.
+  - optional Voxtral endpoint); remaining work is polish and provider UX.
 - **PWA notifications for long tasks (#14)** — build on the existing
   `send_notification` tool and service-worker path.
 - **Conversation templates & prompt library (#44)** — complements the

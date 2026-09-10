@@ -1,0 +1,14 @@
+node_modules/
+test-results/
+playwright-report/
+package-lock.json
+# Hand-styled core: house style (compact dispatch, inline UI markup)
+# enforced by review + ESLint. Prettier covers md/yaml/json.
+js/
+tests/
+index.html
+style.css
+worker.js
+screenshot.png
+icon.svg
+favicon.svg

@@ -27,7 +27,7 @@ This security policy covers:
 ## Supported versions
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | latest  | ✅        |
 
 ## Timeline

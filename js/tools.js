@@ -254,7 +254,6 @@ function updateToolCallUI(toolCall, result) {
         </div>\
       </div>';
   } else if (name === 'fetch_url') {
-    const preview = (result.content || '').slice(0, 80).replace(/\s+/g, ' ').trim();
     const cacheLabel = result.cached ? '<span class="tool-call-detail">(cached ' + (result.age_ms / 1000).toFixed(0) + 's ago)</span>' : '';
     row.innerHTML = '\
       <div class="message-bubble tool-call-bubble tool-call-done">\
