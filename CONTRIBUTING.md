@@ -93,6 +93,9 @@ Always add a `mockFetchProxyRaw` test when modifying proxy-handling code to guar
 
 ## Release process
 
+Release Drafter maintains a draft release from merged PRs automatically —
+review its notes as part of every release, but the version call stays manual.
+
 1. Ensure `CHANGELOG.md` is up to date under the `[Unreleased]` section
 2. Run `npx playwright test` — all tests must pass
 3. Update the version in `package.json` (e.g. `1.1.0`)
@@ -100,4 +103,4 @@ Always add a `mockFetchProxyRaw` test when modifying proxy-handling code to guar
 5. Commit: `git commit -m "Release v1.1.0"`
 6. Tag: `git tag v1.1.0`
 7. Push: `git push origin main --tags`
-8. Create a GitHub Release from the tag with auto-generated notes
+8. Publish the draft release (check the auto-generated notes first, then publish)

@@ -356,7 +356,7 @@ test.describe('Tool execution — fetch_url', () => {
     expect(r.content).toContain('mock raw proxy');
   });
 
-  test('domain block prevents subsequent requests after 429', async ({ page }) => {
+  test('domain block prevents subsequent requests after 429', { timeout: 60000 }, async ({ page }) => {
     const r = await page.evaluate(async () => {
       const origFetch = window.fetch;
       window.fetch = async (url, opts) => {

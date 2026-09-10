@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and a CI lint job; PR template now checks lint and changelog updates
 - Discoverability: license/release/PR badges, package metadata, FAQ and
   troubleshooting section, repo topics
+- Release Drafter maintains draft release notes from merged PRs
 - Local browser engine (BETA): run Qwen2.5 0.5B/1.5B fully in-browser via WebLLM, with tool loop, offline model loading, and engine badge/settings UI
 - GitHub integration tools: `github_get_contents`, `github_create_or_update_file`, `github_create_pr`, `github_create_issue` via direct API calls with a session-only token
 - Text-to-speech output for assistant messages (Web Speech synthesis, optional Voxtral API endpoint)
