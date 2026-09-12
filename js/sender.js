@@ -111,6 +111,7 @@ async function triggerSend() {
 async function triggerSendAPI() {
   const activeChat = getActiveChat();
   if (!activeChat) return;
+  perfMark('send');
 
   let messages, toolDepth, saveFileUsed, consecutiveErrors, lastToolName, sameToolCount, effectiveLimit;
 
@@ -430,6 +431,8 @@ async function triggerSendAPI() {
     if (pausedAgentState) {
       elements.continueGenBtn.style.display = 'flex';
     }
+    perfMark('response-complete');
+    perfReport();
   }
 }
 

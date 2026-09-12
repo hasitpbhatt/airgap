@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Opt-in local timing for time-to-first-magic: `?perf=1` or `localStorage.airgap_perf=1`
+  prints init, send and first-response timings to the console. Marks stay in memory —
+  no network request, no storage write, no telemetry
 - Contributor gates: ESLint correctness config for the shared-global script
   architecture, Prettier for markdown/YAML/JSON, `npm run lint`/`format`,
   and a CI lint job; PR template now checks lint and changelog updates

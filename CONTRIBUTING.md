@@ -67,6 +67,21 @@ Load order is sequential via `<script>` tags. All files share global scope, exce
 3. Add a `case` to the `switch` in `executeToolCall` in `js/tools.js`
 4. Add tests in the matching spec under `tests/` (`tools.spec.js` for most tools)
 
+## Measuring time to first magic
+
+The app's own overhead is measured in-lab, never by tracking users. Enable the marks with
+`?perf=1` or `localStorage.airgap_perf = '1'`, then read them from the console or
+`window.__airgapPerf`:
+
+```js
+perfReport();
+// { 'init to UI ready (ms)': …, 'send to first response (ms)': …, 'page load to first response (ms)': … }
+```
+
+Marks are: `init-start`, `ui-ready`, `send`, `response-complete`. They live in memory
+only — no network request, no storage write. `tests/perf.spec.js` asserts budgets so a
+regression fails CI rather than quietly shipping.
+
 ## Testing proxy responses
 
 The proxy (`worker.js`) can return responses in two formats:

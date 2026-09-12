@@ -77,6 +77,40 @@ function deobfuscateSecret(value) {
   }
 }
 
+// Opt-in, local-only timing for time-to-first-magic (roadmap M1.2). Off unless
+// ?perf=1 or localStorage airgap_perf=1. Marks stay in memory, print to the
+// console, and never leave the machine — no network, no storage write, no
+// third-party anything. This is how the number gets measured in a lab.
+function perfEnabled() {
+  try {
+    if (new URLSearchParams(window.location.search).has('perf')) return true;
+    return localStorage.getItem('airgap_perf') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function perfMark(name) {
+  if (!perfEnabled()) return;
+  const now = performance.now();
+  if (!window.__airgapPerf) window.__airgapPerf = {};
+  if (window.__airgapPerf[name] === undefined) window.__airgapPerf[name] = now;
+}
+
+function perfReport() {
+  if (!perfEnabled() || !window.__airgapPerf) return null;
+  const m = window.__airgapPerf;
+  const summary = {
+    'init to UI ready (ms)': m['ui-ready'] !== undefined && m['init-start'] !== undefined ? Math.round(m['ui-ready'] - m['init-start']) : null,
+    'send to first response (ms)':
+      m['response-complete'] !== undefined && m['send'] !== undefined ? Math.round(m['response-complete'] - m['send']) : null,
+    'page load to first response (ms)':
+      m['response-complete'] !== undefined ? Math.round(m['response-complete']) : null
+  };
+  console.log('[airgap perf]', summary);
+  return summary;
+}
+
 function estimateTokens(str) {
   if (!str) return 0;
   const words = str.split(/\s+/).filter(Boolean).length;

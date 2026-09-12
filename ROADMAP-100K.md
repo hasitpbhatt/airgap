@@ -392,6 +392,13 @@ Everything else in this roadmap is downstream of item 1.
   re-saved obfuscated, so no migration step is needed. Five tests added.
 - **M0.7** — `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.
   Verified rather than changed; no work scheduled.
+- **M1.2** — added opt-in, local-only timing (`?perf=1` or `airgap_perf=1`): marks
+  `init-start`, `ui-ready`, `send`, `response-complete`, surfaced via `perfReport()`. No
+  network, no storage write, no telemetry. `tests/perf.spec.js` asserts budgets so
+  regressions fail CI. **Baseline measured in-lab (mocked CDN + instant provider):** init
+  → UI ready **128 ms**, send → first response **102 ms**, page load → first response
+  **1147 ms**. The app's own overhead is negligible; the remaining time-to-first-magic is
+  page load plus provider latency, so that is where the leverage is — not in this code.
 - **M1.6** — positioning now leads with the secret: "The only AI agent with no server to
   leak to" appears above the fold in the README and as the start-screen headline.
 - **M1.1** — the start screen now leads with **Run in your browser** (no key needed) and

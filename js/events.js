@@ -1,5 +1,6 @@
 // Initialization & Load from LocalStorage
 function init() {
+  perfMark('init-start');
   migrateOpencodeKeys();
 
   // Setup default proxy
@@ -238,6 +239,7 @@ function init() {
   setupAutoScroll();
   setupEventListeners();
   adjustResponsiveLayout();
+  perfMark('ui-ready');
 }
 
 // ── Local Engine UI Helpers ─────────────────────────────────────────────────
