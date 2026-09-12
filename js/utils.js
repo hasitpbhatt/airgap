@@ -56,6 +56,27 @@ function xorHexDecode(hex) {
   return dec;
 }
 
+// Obfuscation at rest for secrets (issue #54). This is not encryption — the
+// transform lives in public source — it only stops a naive localStorage scan
+// from matching the `sk-` shape casual extensions grep for. Values are marked
+// so plaintext written by older versions decodes unchanged on next read.
+const SECRET_PREFIX = 'obf1:';
+
+function obfuscateSecret(value) {
+  if (!value) return '';
+  return SECRET_PREFIX + xorHexEncode(value);
+}
+
+function deobfuscateSecret(value) {
+  if (!value || typeof value !== 'string') return '';
+  if (value.indexOf(SECRET_PREFIX) !== 0) return value;
+  try {
+    return xorHexDecode(value.slice(SECRET_PREFIX.length));
+  } catch (e) {
+    return '';
+  }
+}
+
 function estimateTokens(str) {
   if (!str) return 0;
   const words = str.split(/\s+/).filter(Boolean).length;

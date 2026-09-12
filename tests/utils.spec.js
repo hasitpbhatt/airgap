@@ -37,6 +37,63 @@ test.describe('Utility functions', () => {
     expect(result.parsed.u).toBe('https://api.mistral.ai/v1/chat/completions');
   });
 
+  test('obfuscateSecret and deobfuscateSecret roundtrip a key', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const original = 'sk-test-key-12345';
+      return {
+        original,
+        encoded: obfuscateSecret(original),
+        decoded: deobfuscateSecret(obfuscateSecret(original))
+      };
+    });
+    expect(result.decoded).toBe(result.original);
+    expect(result.encoded).not.toBe(result.original);
+  });
+
+  test('obfuscated secret does not expose the key shape at rest', async ({ page }) => {
+    const encoded = await page.evaluate(() => obfuscateSecret('sk-ant-abcdef123456'));
+    expect(encoded.startsWith('obf1:')).toBe(true);
+    expect(encoded).not.toContain('sk-ant');
+    expect(encoded).not.toContain('abcdef123456');
+  });
+
+  test('deobfuscateSecret passes through legacy plaintext values', async ({ page }) => {
+    const result = await page.evaluate(() => ({
+      legacy: deobfuscateSecret('sk-written-by-older-version'),
+      empty: deobfuscateSecret(''),
+      missing: deobfuscateSecret(undefined)
+    }));
+    expect(result.legacy).toBe('sk-written-by-older-version');
+    expect(result.empty).toBe('');
+    expect(result.missing).toBe('');
+  });
+
+  test('saveSettings obfuscates apiKey at rest but keeps memory plaintext', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      settings.apiKey = 'sk-secret-value';
+      saveSettings();
+      const raw = localStorage.getItem('airgap_settings');
+      return { raw, stored: JSON.parse(raw).apiKey, inMemory: settings.apiKey };
+    });
+    expect(result.inMemory).toBe('sk-secret-value');
+    expect(result.stored).not.toBe('sk-secret-value');
+    expect(result.raw).not.toContain('sk-secret-value');
+    expect(result.stored.startsWith('obf1:')).toBe(true);
+  });
+
+  test('obfuscated apiKey in localStorage loads back into the UI', async ({ page }) => {
+    const encoded = await page.evaluate(() => obfuscateSecret('sk-reloaded'));
+    await page.addInitScript((value) => {
+      const raw = localStorage.getItem('airgap_settings');
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.apiKey = value;
+      localStorage.setItem('airgap_settings', JSON.stringify(parsed));
+    }, encoded);
+    await page.reload();
+    await page.waitForSelector('#sidebar');
+    await expect(page.locator('#api-key')).toHaveValue('sk-reloaded');
+  });
+
   test('estimateTokens returns 0 for null/undefined/empty string', async ({ page }) => {
     const r = await page.evaluate(() => {
       return {

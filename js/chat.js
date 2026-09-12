@@ -1,6 +1,8 @@
 // Save helpers
 function saveSettings() {
-  localStorage.setItem('airgap_settings', JSON.stringify(settings));
+  const persisted = Object.assign({}, settings);
+  if (persisted.apiKey) persisted.apiKey = obfuscateSecret(persisted.apiKey);
+  localStorage.setItem('airgap_settings', JSON.stringify(persisted));
 }
 
 function saveChats() {

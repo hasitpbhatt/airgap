@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- API keys are obfuscated at rest in localStorage (prefixed `obf1:`). This raises
+  the bar against casual extension scraping; it is not encryption. Plaintext keys
+  written by earlier versions are read as-is and re-saved obfuscated, so no
+  migration step is needed
 - Overhauled README with comprehensive project documentation
 - Renamed `opencode_*` localStorage keys and all user-visible strings to `airgap`; existing chats and settings migrate automatically on first load
 

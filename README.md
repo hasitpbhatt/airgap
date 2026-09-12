@@ -161,7 +161,7 @@ Load order is sequential via `<script>` tags. All files share global scope, exce
 | LLM API Proxy URL      | `https://api.mistral.ai/v1/chat/completions` | Any OpenAI-compatible API                               |
 | Tool Fetch Proxy URL   | `https://airgap-fetch.gitub.workers.dev/`    | Primary web fetch endpoint                              |
 | Backup Fetch Proxy URL | —                                            | Optional fallback if primary proxy fails                |
-| API Key                | —                                            | Stored in localStorage only                             |
+| API Key                | —                                            | Stored in localStorage, obfuscated at rest (see below)  |
 | GitHub Token           | —                                            | Session only, never stored; requires `repo` scope       |
 | Engine                 | Remote API                                   | Remote API or Local Browser (BETA)                      |
 | Model                  | `mistral-small-latest`                       | Preset or custom model name                             |
@@ -395,7 +395,7 @@ Set the **Tool Fetch Proxy URL** in settings to point to your own proxy endpoint
 - All state is localStorage — clearing browser data loses chats and memory
 - Internet required for initial page load (CDN content) and all LLM API calls
 - localStorage size limits vary by browser (~5-10 MB)
-- No encryption at rest (localStorage is unencrypted on disk)
+- API keys are obfuscated at rest, not encrypted — localStorage is unencrypted on disk and the transform lives in public source. It defeats casual pattern-matching, not a determined attacker with local access
 - Large conversations may hit per-model context limits (detailed in `CONTEXT_LIMITS` in `constants.js`)
 
 ## FAQ / Troubleshooting
