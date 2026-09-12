@@ -196,15 +196,15 @@ actually _proves_:
 
 > **Jobs:** "You can't market a product that isn't on the shelf."
 
-| #    | Milestone                                                                                                                               | Owner voice  | Rationale                                                                                                                                            |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0.1 | **Push the 97 commits to `main`.** Tag and release v1.1.0 with the CHANGELOG `[Unreleased]` block promoted.                             | Jobs         | Twelve weeks of silence reads as death. Releases are the heartbeat of an OSS project.                                                                |
-| M0.2 | **Close #66–#73** — the six issues whose work is already landed and unpushed.                                                           | Ilya         | An issue tracker that lies is worse than no tracker. It is the first thing a serious contributor reads.                                              |
-| M0.3 | **Fix the `Fixes #N` breakage.** Audit why six issues stayed open; the convention exists but wasn't enforced.                           | Norman       | Make the correct path the automatic path — the convention shouldn't depend on remembering it.                                                        |
-| M0.4 | **Redeploy the GitHub Pages demo from `main`.** Verify it serves the current build.                                                     | Sam          | The demo is the top of the funnel. A stale funnel converts at zero no matter how good the product is.                                                |
-| M0.5 | **Land #54 (API key obfuscation at rest).**                                                                                             | Thiel        | For a privacy tool, plaintext keys in localStorage is the first thing a security-minded evaluator checks. It's the cheapest credibility you can buy. |
-| M0.6 | **Archive or delete the ~24 stale branches.** Keep `wip/online-enhancement-cache-queue` only with a comment stating its known gap list. | Jobs / Thiel | Focus is legible. Branch clutter signals abandonment to every visitor who clicks the dropdown.                                                       |
-| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71).                                                                 | Ilya         | No evaluation, no trust.                                                                                                                             |
+| #    | Milestone                                                                                                                                                                                                           | Owner voice  | Rationale                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0.1 | **Push the 97 commits to `main`.** Tag and release v1.1.0 with the CHANGELOG `[Unreleased]` block promoted. **Blocked:** no GitHub credentials in the working environment — needs `gh auth login` or an SSH remote. | Jobs         | Twelve weeks of silence reads as death. Releases are the heartbeat of an OSS project.                                                                |
+| M0.2 | **Close #66–#73** — the six issues whose work is already landed and unpushed.                                                                                                                                       | Ilya         | An issue tracker that lies is worse than no tracker. It is the first thing a serious contributor reads.                                              |
+| M0.3 | **Audited the issue-closing convention — no fix needed.** All six commits already carry the keyword, so the push closes them. Verified by scanning all 97 commit bodies.                                            | Ilya         | The tracker was reporting an unpushed repo, not a broken process. Confirm a defect before scheduling a fix for it.                                   |
+| M0.4 | **Redeploy the GitHub Pages demo from `main`.** Verify it serves the current build.                                                                                                                                 | Sam          | The demo is the top of the funnel. A stale funnel converts at zero no matter how good the product is.                                                |
+| M0.5 | **Land #54 (API key obfuscation at rest).** — **done locally, awaiting push**                                                                                                                                       | Thiel        | For a privacy tool, plaintext keys in localStorage is the first thing a security-minded evaluator checks. It's the cheapest credibility you can buy. |
+| M0.6 | **Archive or delete the ~24 stale branches.** Keep `wip/online-enhancement-cache-queue` only with a comment stating its known gap list.                                                                             | Jobs / Thiel | Focus is legible. Branch clutter signals abandonment to every visitor who clicks the dropdown.                                                       |
+| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71).                                                                                                                                             | Ilya         | No evaluation, no trust.                                                                                                                             |
 
 **Exit criteria:** `main` == local · v1.1.0 tagged and published · open issues ≤ 10 ·
 demo rebuilt from `main` · CI badge green.
@@ -366,13 +366,26 @@ of being positioned to catch the wave; it cannot create the wave.
 ## 9. The Next Five Actions — This Week
 
 1. **`git push origin main`** — ship the 97 parked commits, then tag **v1.1.0**.
-2. **Close #66–#73** (already done, never closed) and land **#54**; archive stale branches.
+   _Blocked:_ the working environment has no GitHub credentials (`gh` is not logged in,
+   no SSH key, remote is HTTPS). Run `gh auth login` first.
+2. **Close #66–#73** — no manual action needed. All six commits carry the closing keyword,
+   so the push in step 1 closes them automatically.
 3. **Redeploy the GitHub Pages demo from `main`** and verify it serves the current build.
 4. **Make the local browser engine the default zero-key path on the demo** — the largest
    single conversion lever in this document.
 5. **Record the 30-second demo (#69)** and place it above the fold in the README.
 
 Everything else in this roadmap is downstream of item 1.
+
+### Phase 0 work completed locally (unpushed)
+
+- **M0.3** — audited the issue-closing convention across all 97 commit bodies; no defect
+  found, so no fix was scheduled. Corrected the earlier assumption in this document.
+- **M0.5 (#54)** — API keys are now obfuscated at rest in localStorage (`obf1:` prefix)
+  via `obfuscateSecret` / `deobfuscateSecret` in `js/utils.js`, applied in `saveSettings()`
+  and unwrapped in `init()`. Legacy plaintext values pass through untouched and are
+  re-saved obfuscated, so no migration step is needed. Five tests added; suite is at
+  175 passing.
 
 ---
 
