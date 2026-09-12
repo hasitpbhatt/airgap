@@ -31,6 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Start screen leads with **Run in your browser** (no API key needed) and demotes
+  bring-your-own-key behind a divider, so the demo no longer requires a key up front.
+  The local option is hidden on `file://`, where the ES-module engine cannot load
 - API keys are obfuscated at rest in localStorage (prefixed `obf1:`). This raises
   the bar against casual extension scraping; it is not encryption. Plaintext keys
   written by earlier versions are read as-is and re-saved obfuscated, so no

@@ -31,6 +31,25 @@ test.describe('Connect screen', () => {
     await expect(page.locator('#connect-overlay')).not.toBeVisible();
   });
 
+  test('bring-your-own-key path stays available', async ({ page }) => {
+    await clearStorage(page);
+    await page.goto(INDEX);
+    await page.waitForSelector('#connect-overlay');
+    await expect(page.locator('#connect-url-input')).toBeVisible();
+    await expect(page.locator('#connect-key-input')).toBeVisible();
+    await expect(page.locator('#connect-btn')).toBeVisible();
+    await expect(page.locator('.connect-divider')).toBeVisible();
+  });
+
+  test('local-engine CTA is hidden on file:// where it cannot load', async ({ page }) => {
+    await clearStorage(page);
+    await page.goto(INDEX);
+    await page.waitForSelector('#connect-overlay');
+    const supported = await page.evaluate(() => localEngineSupported());
+    expect(supported).toBe(false);
+    await expect(page.locator('#connect-local-cta')).toBeHidden();
+  });
+
   test('is hidden when injectedKey is true', async ({ page }) => {
     await seedSettings(page, { apiKey: 'sk-injected', injectedKey: true });
     await page.goto(INDEX);

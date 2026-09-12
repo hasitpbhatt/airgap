@@ -204,7 +204,7 @@ actually _proves_:
 | M0.4 | **Redeploy the GitHub Pages demo from `main`.** Verify it serves the current build.                                                                                                                                 | Sam          | The demo is the top of the funnel. A stale funnel converts at zero no matter how good the product is.                                                |
 | M0.5 | **Land #54 (API key obfuscation at rest).** — **done locally, awaiting push**                                                                                                                                       | Thiel        | For a privacy tool, plaintext keys in localStorage is the first thing a security-minded evaluator checks. It's the cheapest credibility you can buy. |
 | M0.6 | **Archive or delete the ~24 stale branches.** Keep `wip/online-enhancement-cache-queue` only with a comment stating its known gap list.                                                                             | Jobs / Thiel | Focus is legible. Branch clutter signals abandonment to every visitor who clicks the dropdown.                                                       |
-| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71).                                                                                                                                             | Ilya         | No evaluation, no trust.                                                                                                                             |
+| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71). — **verified, no change needed**                                                                                                            | Ilya         | No evaluation, no trust. `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.                                                 |
 
 **Exit criteria:** `main` == local · v1.1.0 tagged and published · open issues ≤ 10 ·
 demo rebuilt from `main` · CI badge green.
@@ -220,7 +220,7 @@ demo rebuilt from `main` · CI badge green.
 
 | #    | Milestone                                                                                                                                                                                                                                                                          | Owner voice | Rationale                                                                                                                                      |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1.1 | **Zero-key first run.** Make the local browser engine (WebLLM, Qwen2.5-0.5B ≈310 MB) the **default on the hosted demo** — no API key, no signup, no configuration.                                                                                                                 | Jobs + Sam  | **The single highest-leverage item in this roadmap.** "I don't have an API key" is where nearly every visitor leaves. Remove the ask entirely. |
+| M1.1 | **Zero-key first run.** Make the local browser engine (WebLLM, Qwen2.5-0.5B ≈310 MB) the **default on the hosted demo** — no API key, no signup, no configuration. — **done locally, awaiting push**                                                                               | Jobs + Sam  | **The single highest-leverage item in this roadmap.** "I don't have an API key" is where nearly every visitor leaves. Remove the ask entirely. |
 | M1.2 | **Measure time-to-first-magic:** clone → open → first agent answer that used a tool. Target ≤ 60s with a key, ≤ 90s zero-key. Measured **in-lab, never by telemetry.**                                                                                                             | Ilya        | You cannot improve what you don't measure — and you must not measure it by tracking users.                                                     |
 | M1.3 | **The 30-second demo (#69).** Silent, captioned, autoplaying above the fold: local model loads → agent searches the web → saves a note → renders a chart.                                                                                                                          | Jobs        | The demo is the product. This asset will do more conversion work than every other line of copy combined.                                       |
 | M1.4 | **First-run onboarding:** three questions maximum (role → provider → goal), which then preconfigure persona, model, and three starter prompts.                                                                                                                                     | Norman      | Collapse the Gulf of Execution to zero. An empty textarea is the most intimidating UI in software.                                             |
@@ -384,8 +384,16 @@ Everything else in this roadmap is downstream of item 1.
 - **M0.5 (#54)** — API keys are now obfuscated at rest in localStorage (`obf1:` prefix)
   via `obfuscateSecret` / `deobfuscateSecret` in `js/utils.js`, applied in `saveSettings()`
   and unwrapped in `init()`. Legacy plaintext values pass through untouched and are
-  re-saved obfuscated, so no migration step is needed. Five tests added; suite is at
-  175 passing.
+  re-saved obfuscated, so no migration step is needed. Five tests added.
+- **M0.7** — `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.
+  Verified rather than changed; no work scheduled.
+- **M1.1** — the start screen now leads with **Run in your browser** (no key needed) and
+  puts bring-your-own-key behind a divider, so the demo no longer asks for a key up front.
+  Added `localEngineSupported()`; the local option is hidden on `file://`, where the
+  ES-module engine cannot load, so an affordance that cannot work is never offered.
+  README quick start and CHANGELOG updated; two tests added.
+
+Suite: **177 passing**.
 
 ---
 

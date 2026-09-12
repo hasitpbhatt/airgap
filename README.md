@@ -58,7 +58,12 @@ git clone https://github.com/hasitpbhatt/airgap.git
 cd airgap
 ```
 
-Open `index.html` in a browser. Paste an API key. Send a message.
+Open `index.html` in a browser. Send a message.
+
+No key handy? Pick **Run in your browser** on the start screen: it downloads a small model
+(~310 MB) once and runs entirely on your machine — no API key, no account, nothing leaving
+the browser. Needs a served origin (`python3 -m http.server`), so it is unavailable on
+`file://`, where the start screen hides the option. Otherwise paste an API key and go.
 
 Web access uses a Cloudflare Worker (default) or any CORS proxy you configure. Searches try direct connections to public SearXNG instances first, then fall back to the proxy chain.
 

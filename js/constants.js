@@ -628,3 +628,9 @@ const getInitialProxyUrl = () => {
   }
   return 'https://api.mistral.ai/v1/chat/completions';
 };
+
+// local-engine.js is an ES module, so it only loads from served origins.
+// Used to hide the local-engine affordance where it cannot work.
+function localEngineSupported() {
+  return window.location.protocol !== 'file:';
+}

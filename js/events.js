@@ -81,6 +81,10 @@ function init() {
       connectOverlay.style.display = 'flex';
     }
   }
+  const connectLocalCta = document.getElementById('connect-local-cta');
+  if (connectLocalCta && !localEngineSupported()) {
+    connectLocalCta.style.display = 'none';
+  }
   const connectLocalBtn = document.getElementById('connect-local-btn');
   if (connectLocalBtn) {
     connectLocalBtn.addEventListener('click', function() {

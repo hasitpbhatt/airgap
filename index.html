@@ -81,6 +81,13 @@
           </div>
         </div>
 
+        <div class="connect-local-cta" id="connect-local-cta">
+          <button id="connect-local-btn" class="connect-btn">Run in your browser — no key needed</button>
+          <p class="connect-note">Downloads a ~310 MB model once, then runs entirely on your machine. Nothing leaves the browser.</p>
+        </div>
+
+        <div class="connect-divider"><span>or bring your own key</span></div>
+
         <div class="connect-field-group">
           <label class="connect-field-label" for="connect-url-input">API URL</label>
           <input type="text" id="connect-url-input" class="setting-input" placeholder="https://api.mistral.ai/v1/chat/completions" autocomplete="off" spellcheck="false">
@@ -90,11 +97,7 @@
           <input type="password" id="connect-key-input" class="setting-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
         </div>
         <div class="connect-input-group">
-          <button id="connect-btn" class="connect-btn">Connect</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;justify-content:center;">
-          <span style="font-size:0.75rem;color:hsl(var(--text-muted));">or</span>
-          <button id="connect-local-btn" class="connect-btn-secondary">Use Local Browser (BETA)</button>
+          <button id="connect-btn" class="connect-btn-secondary">Connect</button>
         </div>
         <p class="connect-note">Your key stays in your browser — no data leaves your machine. Works with Mistral, OpenAI, or any OpenAI-compatible API. <a href="https://github.com/alistaitsacle/free-llm-api-keys" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--primary))">Free test keys</a></p>
       </div>

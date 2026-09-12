@@ -31,6 +31,7 @@ const projectGlobals = {
   MAX_TOOL_RESULT_CHARS: 'readonly',
   elements: 'readonly',
   getInitialProxyUrl: 'readonly',
+  localEngineSupported: 'readonly',
   getAllTools: 'readonly',
   getContextLimit: 'readonly',
   // storage.js
