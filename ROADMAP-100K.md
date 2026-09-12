@@ -89,29 +89,33 @@ Baseline verified: **2026-09-12**.
 
 ---
 
-## 2. Situation Assessment (verified 2026-09-12)
+## 2. Situation Assessment (verified 2026-09-12, updated after the push)
 
-| Signal                        | Value                                | Read                              |
-| ----------------------------- | ------------------------------------ | --------------------------------- |
-| Stars / forks / watchers      | **0 / 0 / 0**                        | Pre-launch, not post-failure      |
-| Created                       | 2026-06-18                           | ~3 months old                     |
-| `origin/main` last commit     | **2026-06-17**                       | **12 weeks stale**                |
-| Local `main` vs `origin/main` | **97 commits ahead**                 | **8 weeks of work never shipped** |
-| Open issues                   | 16 — of which **6 are already done** | Tracker is lying                  |
-| Demo (GitHub Pages)           | Reachable (HTTP 200)                 | Serving a stale build             |
-| README                        | Genuinely strong                     | Best asset you have               |
-| Fetch proxy worker            | Reachable                            | Healthy                           |
-| Stale branches                | ~10 local + ~14 remote               | Reads as abandoned                |
+| Signal                        | Value                  | Read                                    |
+| ----------------------------- | ---------------------- | --------------------------------------- |
+| Stars / forks / watchers      | **0 / 0 / 0**          | Pre-launch, not post-failure            |
+| Created                       | 2026-06-18             | ~3 months old                           |
+| `origin/main` at first review | **2026-06-17**         | Was 12 weeks stale                      |
+| Local vs `origin/main`        | **97 commits ahead**   | **Resolved — pushed 2026-09-12 08:42Z** |
+| Open issues                   | 16 → **10**            | The 6 already-done issues auto-closed   |
+| Demo (GitHub Pages)           | Reachable (HTTP 200)   | Now serving the pushed build            |
+| README                        | Genuinely strong       | Best asset you have                     |
+| Fetch proxy worker            | Reachable              | Healthy                                 |
+| Stale branches                | ~10 local + ~14 remote | Reads as abandoned                      |
 
 ### The one finding that matters
 
-> **Nothing has been pushed to `main` since v1.0.0.** Local `main` is 97 commits ahead.
+> **Nothing had been pushed to `main` since v1.0.0.** Local `main` was 97 commits ahead.
 > The local browser engine, GitHub tools, TTS, slash commands, file attachments, conversation
-> branching, global search, ESLint/Prettier gates, and Release Drafter all exist — on a
-> laptop. Issues #66–#73 remain open not because the work is unfinished but because the
+> branching, global search, ESLint/Prettier gates, and Release Drafter all existed — on a
+> laptop. Issues #66–#73 sat open not because the work was unfinished but because the
 > commits were never pushed.
 
-No growth strategy survives this. All six members converge here, from six directions:
+**Resolved 2026-09-12.** The backlog was pushed at 08:42Z and the tracker went from 16 to
+10 open issues on its own, confirming the audit in M0.3: the closing keywords were always
+there, the commits just needed to land.
+
+This was the binding constraint. All six members converge on it, from six directions:
 
 - **Jobs:** "Real artists ship."
 - **Ilya:** "You cannot evaluate an artifact nobody can run."
@@ -196,15 +200,15 @@ actually _proves_:
 
 > **Jobs:** "You can't market a product that isn't on the shelf."
 
-| #    | Milestone                                                                                                                                                                                                           | Owner voice  | Rationale                                                                                                                                            |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0.1 | **Push the 97 commits to `main`.** Tag and release v1.1.0 with the CHANGELOG `[Unreleased]` block promoted. **Blocked:** no GitHub credentials in the working environment — needs `gh auth login` or an SSH remote. | Jobs         | Twelve weeks of silence reads as death. Releases are the heartbeat of an OSS project.                                                                |
-| M0.2 | **Close #66–#73** — the six issues whose work is already landed and unpushed.                                                                                                                                       | Ilya         | An issue tracker that lies is worse than no tracker. It is the first thing a serious contributor reads.                                              |
-| M0.3 | **Audited the issue-closing convention — no fix needed.** All six commits already carry the keyword, so the push closes them. Verified by scanning all 97 commit bodies.                                            | Ilya         | The tracker was reporting an unpushed repo, not a broken process. Confirm a defect before scheduling a fix for it.                                   |
-| M0.4 | **Redeploy the GitHub Pages demo from `main`.** Verify it serves the current build.                                                                                                                                 | Sam          | The demo is the top of the funnel. A stale funnel converts at zero no matter how good the product is.                                                |
-| M0.5 | **Land #54 (API key obfuscation at rest).** — **done locally, awaiting push**                                                                                                                                       | Thiel        | For a privacy tool, plaintext keys in localStorage is the first thing a security-minded evaluator checks. It's the cheapest credibility you can buy. |
-| M0.6 | **Archive or delete the ~24 stale branches.** Keep `wip/online-enhancement-cache-queue` only with a comment stating its known gap list.                                                                             | Jobs / Thiel | Focus is legible. Branch clutter signals abandonment to every visitor who clicks the dropdown.                                                       |
-| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71). — **verified, no change needed**                                                                                                            | Ilya         | No evaluation, no trust. `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.                                                 |
+| #    | Milestone                                                                                                                                                                | Owner voice  | Rationale                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0.1 | **Push the 97 commits to `main`.** — **done 2026-09-12 08:42Z.** Still open: tag and release **v1.1.0** with the CHANGELOG `[Unreleased]` block promoted.                | Jobs         | Twelve weeks of silence reads as death. Releases are the heartbeat of an OSS project.                                                                |
+| M0.2 | **Close #66–#73** — the six issues whose work was already landed and unpushed. — **done: the push closed them with no manual action**                                    | Ilya         | An issue tracker that lies is worse than no tracker. It is the first thing a serious contributor reads. Tracker went 16 → 10 on its own.             |
+| M0.3 | **Audited the issue-closing convention — no fix needed.** All six commits already carry the keyword, so the push closes them. Verified by scanning all 97 commit bodies. | Ilya         | The tracker was reporting an unpushed repo, not a broken process. Confirm a defect before scheduling a fix for it.                                   |
+| M0.4 | **Redeploy the GitHub Pages demo from `main`.** Verify it serves the current build.                                                                                      | Sam          | The demo is the top of the funnel. A stale funnel converts at zero no matter how good the product is.                                                |
+| M0.5 | **Land #54 (API key obfuscation at rest).** — **done locally, awaiting push**                                                                                            | Thiel        | For a privacy tool, plaintext keys in localStorage is the first thing a security-minded evaluator checks. It's the cheapest credibility you can buy. |
+| M0.6 | **Archive or delete the ~24 stale branches.** Keep `wip/online-enhancement-cache-queue` only with a comment stating its known gap list.                                  | Jobs / Thiel | Focus is legible. Branch clutter signals abandonment to every visitor who clicks the dropdown.                                                       |
+| M0.7 | **Make CI visibly green** and confirm lint + tests gate every PR (#71). — **verified, no change needed**                                                                 | Ilya         | No evaluation, no trust. `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.                                                 |
 
 **Exit criteria:** `main` == local · v1.1.0 tagged and published · open issues ≤ 10 ·
 demo rebuilt from `main` · CI badge green.
@@ -365,15 +369,16 @@ of being positioned to catch the wave; it cannot create the wave.
 
 ## 9. The Next Five Actions — This Week
 
-1. **`git push origin main`** — ship the 97 parked commits, then tag **v1.1.0**.
-   _Blocked:_ the working environment has no GitHub credentials (`gh` is not logged in,
-   no SSH key, remote is HTTPS). Run `gh auth login` first.
-2. **Close #66–#73** — no manual action needed. All six commits carry the closing keyword,
-   so the push in step 1 closes them automatically.
-3. **Redeploy the GitHub Pages demo from `main`** and verify it serves the current build.
-4. **Make the local browser engine the default zero-key path on the demo** — the largest
-   single conversion lever in this document.
+1. ~~**`git push origin main`** — ship the 97 parked commits.~~ **Done** 2026-09-12 08:42Z.
+   The tracker went 16 → 10 open issues by itself.
+2. ~~**Close #66–#73.**~~ **Done** — step 1 closed them; no manual action was needed.
+3. **Push the four remaining local commits** (M0.5, M1.1, M1.6 and this doc), then tag
+   **v1.1.0** with the CHANGELOG `[Unreleased]` block promoted.
+4. **Redeploy the GitHub Pages demo from `main`** and verify it serves the current build —
+   it should now pick up the new zero-key start screen.
 5. **Record the 30-second demo (#69)** and place it above the fold in the README.
+6. **Archive the ~24 stale branches** (M0.6). Not started — deleting branches is
+   destructive and `wip/online-enhancement-cache-queue` still holds unmerged work.
 
 Everything else in this roadmap is downstream of item 1.
 
