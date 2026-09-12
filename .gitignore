@@ -20,3 +20,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.sublime-*
+
+# AI assistant local state
+.workbuddy-ai/
