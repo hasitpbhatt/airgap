@@ -23,6 +23,7 @@ const projectGlobals = {
   AVAILABLE_TOOLS: 'readonly',
   LOCAL_TOOLS: 'readonly',
   CONTEXT_LIMITS: 'readonly',
+  ONBOARDING_STEPS: 'readonly',
   MODEL_PRICING: 'readonly',
   AUTO_COMPACT_THRESHOLD: 'readonly',
   CONTEXT_WINDOW_MARGIN: 'readonly',

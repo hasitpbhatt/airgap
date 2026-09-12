@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- First-run onboarding: three questions (role, provider, goal) that map onto real settings,
+  so a new user lands on a configured app rather than a blank textarea. Every step is
+  skippable, answers can be revisited with Back, and the chosen goal adds three starter
+  prompts to the welcome screen that fill the composer in one click
 - Undo for destructive memory actions: clearing all memory, from the sidebar panel or from
   the agent's `forget_all` tool, now offers an Undo toast for 8 seconds instead of being
   final. The confirm copy no longer claims it cannot be undone

@@ -392,6 +392,11 @@ Everything else in this roadmap is downstream of item 1.
   re-saved obfuscated, so no migration step is needed. Five tests added.
 - **M0.7** — `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.
   Verified rather than changed; no work scheduled.
+- **M1.4** — first-run onboarding: three questions (role → provider → goal), each mapped to
+  a real setting rather than stored as trivia. Skippable at every step, revisitable with
+  Back, never shown twice. The goal answer becomes three starter prompts on the welcome
+  screen that fill the composer in one click — so the first thing a new user sees is a
+  decision between good options, not an empty box. Seven tests added.
 - **M1.5** — destructive memory actions are now recoverable. Clearing all memory, whether
   from the sidebar or from the agent's `forget_all` tool, offers an Undo toast for 8s; the
   confirm copy no longer says "This cannot be undone". `forget_all` needed this most — the

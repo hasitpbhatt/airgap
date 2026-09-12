@@ -95,6 +95,7 @@ function init() {
       elements.engineSelect.value = 'local';
       updateLocalEngineUI('local');
       updateLocalStatusText();
+      maybeShowOnboarding();
     });
   }
   if (settings.engine !== 'local' && !settings.apiKey && !settings.injectedKey) {
@@ -113,6 +114,7 @@ function init() {
       if (elements.proxyUrlInput) elements.proxyUrlInput.value = settings.proxyUrl;
       saveSettings();
       hideConnectScreen();
+      maybeShowOnboarding();
     };
     connectBtn.addEventListener('click', doConnect);
     connectInput.addEventListener('keydown', (e) => {
@@ -239,10 +241,137 @@ function init() {
   setupAutoScroll();
   setupEventListeners();
   adjustResponsiveLayout();
+  if (settings.apiKey || settings.engine === 'local') maybeShowOnboarding();
   perfMark('ui-ready');
 }
 
 // ── Local Engine UI Helpers ─────────────────────────────────────────────────
+// First-run onboarding (M1.4). Three questions that map onto real settings, so
+// a new user lands on a configured app instead of a blank textarea. Never shown
+// twice, and every screen offers a way out.
+function onboardingComplete() {
+  try {
+    return localStorage.getItem('airgap_onboarded') === '1';
+  } catch (e) {
+    return true;
+  }
+}
+
+function maybeShowOnboarding() {
+  if (onboardingComplete()) return;
+  const overlay = document.getElementById('onboarding-overlay');
+  if (!overlay) return;
+  onboardingStep = 0;
+  onboardingAnswers = {};
+  renderOnboarding();
+  overlay.style.display = 'flex';
+}
+
+function renderOnboarding() {
+  const overlay = document.getElementById('onboarding-overlay');
+  if (!overlay) return;
+  const step = ONBOARDING_STEPS[onboardingStep];
+  const total = ONBOARDING_STEPS.length;
+  const isLast = onboardingStep === total - 1;
+
+  const options = step.options
+    .map(function (opt, i) {
+      const selected = onboardingAnswers[step.id] === i ? ' onboarding-option-selected' : '';
+      return (
+        '<button class="onboarding-option' +
+        selected +
+        '" data-step="' +
+        step.id +
+        '" data-index="' +
+        i +
+        '">' +
+        '<span class="onboarding-option-label">' +
+        escapeHtml(opt.label) +
+        '</span>' +
+        '<span class="onboarding-option-hint">' +
+        escapeHtml(opt.hint) +
+        '</span>' +
+        '</button>'
+      );
+    })
+    .join('');
+
+  overlay.innerHTML =
+    '<div class="onboarding-card">' +
+    '<div class="onboarding-progress">Step ' +
+    (onboardingStep + 1) +
+    ' of ' +
+    total +
+    '</div>' +
+    '<h2 class="onboarding-question">' +
+    escapeHtml(step.question) +
+    '</h2>' +
+    '<div class="onboarding-options">' +
+    options +
+    '</div>' +
+    '<div class="onboarding-actions">' +
+    '<button class="connect-btn-secondary" id="onboarding-skip">Skip</button>' +
+    '<div class="onboarding-actions-right">' +
+    (onboardingStep > 0 ? '<button class="connect-btn-secondary" id="onboarding-back">Back</button>' : '') +
+    '<button class="connect-btn" id="onboarding-next"' +
+    (onboardingAnswers[step.id] === undefined ? ' disabled' : '') +
+    '>' +
+    (isLast ? 'Finish' : 'Next') +
+    '</button>' +
+    '</div></div></div>';
+
+  overlay.querySelectorAll('.onboarding-option').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      onboardingAnswers[step.id] = parseInt(btn.getAttribute('data-index'), 10);
+      renderOnboarding();
+    });
+  });
+
+  const next = document.getElementById('onboarding-next');
+  if (next) next.addEventListener('click', advanceOnboarding);
+  const back = document.getElementById('onboarding-back');
+  if (back) back.addEventListener('click', function () {
+    onboardingStep = Math.max(0, onboardingStep - 1);
+    renderOnboarding();
+  });
+  document.getElementById('onboarding-skip').addEventListener('click', function () {
+    finishOnboarding(false);
+  });
+}
+
+function advanceOnboarding() {
+  if (onboardingStep < ONBOARDING_STEPS.length - 1) {
+    onboardingStep += 1;
+    renderOnboarding();
+    return;
+  }
+  finishOnboarding(true);
+}
+
+function finishOnboarding(apply) {
+  if (apply) {
+    ONBOARDING_STEPS.forEach(function (step) {
+      const picked = step.options[onboardingAnswers[step.id]];
+      if (!picked) return;
+      if (picked.persona) settings.currentPersona = picked.persona;
+      if (picked.proxyUrl) settings.proxyUrl = picked.proxyUrl;
+      if (picked.modelName) settings.modelName = picked.modelName;
+      if (picked.prompts) settings.starterPrompts = picked.prompts.slice(0, 3);
+    });
+    saveSettings();
+    if (elements.proxyUrlInput) elements.proxyUrlInput.value = settings.proxyUrl;
+    if (elements.personaSelect) elements.personaSelect.value = settings.currentPersona;
+    renderChatFeed();
+  }
+  try {
+    localStorage.setItem('airgap_onboarded', '1');
+  } catch (e) {
+    console.error('Could not persist onboarding flag', e);
+  }
+  const overlay = document.getElementById('onboarding-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
 function updateLocalEngineUI(engine) {
   const isLocal = engine === 'local';
   if (isLocal && !window.__localEngine) {
@@ -1014,6 +1143,8 @@ const slashCommands = [
 ];
 let slashMenuVisible = false;
 let slashHighlightIndex = 0;
+let onboardingStep = 0;
+let onboardingAnswers = {};
 
 function handleSlashInput() {
   const text = elements.chatTextarea.value;

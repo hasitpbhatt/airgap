@@ -32,6 +32,70 @@ const PERSONAS = {
   }
 };
 
+// First-run onboarding (roadmap M1.4). Three questions, each mappable to a
+// concrete setting, so the empty state is never a blank textarea. Every step is
+// skippable — a wizard you cannot exit is worse than no wizard.
+const ONBOARDING_STEPS = [
+  {
+    id: 'role',
+    question: 'What best describes you?',
+    options: [
+      { label: 'Developer', hint: 'Coding, debugging, tooling', persona: 'general' },
+      { label: 'Researcher', hint: 'Deep technical analysis', persona: 'deep' },
+      { label: 'Student', hint: 'Learn by being asked, not told', persona: 'socratic' },
+      { label: 'Something else', hint: 'General everyday use', persona: 'general' }
+    ]
+  },
+  {
+    id: 'provider',
+    question: 'Where should your requests go?',
+    options: [
+      { label: 'Mistral AI', hint: 'Fast and inexpensive', proxyUrl: 'https://api.mistral.ai/v1/chat/completions', modelName: 'mistral-small-latest' },
+      { label: 'OpenAI', hint: 'GPT-4o and family', proxyUrl: 'https://api.openai.com/v1/chat/completions', modelName: 'gpt-4o' },
+      { label: 'Groq', hint: 'Very fast inference', proxyUrl: 'https://api.groq.com/openai/v1/chat/completions', modelName: 'llama-3.3-70b-versatile' },
+      { label: 'Local model', hint: 'Ollama or llama.cpp — nothing leaves the machine', proxyUrl: 'http://localhost:11434/v1/chat/completions', modelName: 'llama3.2' }
+    ]
+  },
+  {
+    id: 'goal',
+    question: 'What do you want to do first?',
+    options: [
+      {
+        label: 'Research the web',
+        hint: 'Search, fetch, summarise',
+        prompts: [
+          'Search the web for the latest news on WebGPU and summarise the top three results.',
+          'Fetch this URL and pull out the key arguments: https://example.com',
+          'Find three sources comparing local LLM runtimes and list the trade-offs.'
+        ]
+      },
+      {
+        label: 'Write and summarise',
+        hint: 'Drafts, notes, reports',
+        prompts: [
+          'Save a note called "meeting-notes" with the key points from my last message.',
+          'Summarise this conversation so far in five bullet points.',
+          'Draft a short project update, then offer it as a downloadable file.'
+        ]
+      },
+      {
+        label: 'Reason through a problem',
+        hint: 'Step-by-step thinking',
+        prompts: [
+          'Break down why our API bill tripled last month, from first principles.',
+          'Explain how a service worker enables offline push, step by step.',
+          'Compare two architectures for a zero-backend app and recommend one.'
+        ]
+      },
+      {
+        label: 'Just chat',
+        hint: 'No particular goal',
+        prompts: ['What can you do with the tools you have?', 'Tell me something useful I did not ask about.']
+      }
+    ]
+  }
+];
+
 // Tool Definitions for Agentic Behaviour
 const AVAILABLE_TOOLS = [
   {

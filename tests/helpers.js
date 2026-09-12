@@ -61,9 +61,19 @@ async function seedSettings(page, overrides = {}) {
     currentPersona: 'general',
     customSystemPrompt: '',
   };
-  await page.addInitScript((data) => {
-    localStorage.setItem('airgap_settings', JSON.stringify(data));
-  }, { ...defaults, ...overrides });
+  const merged = { ...defaults, ...overrides };
+  // `onboarded` is a test-only switch, not an app setting. Default true so
+  // existing specs are not blocked by the first-run overlay; pass
+  // { onboarded: false } to exercise the onboarding flow itself.
+  const onboarded = merged.onboarded !== false;
+  delete merged.onboarded;
+  await page.addInitScript(
+    (data) => {
+      localStorage.setItem('airgap_settings', JSON.stringify(data.settings));
+      if (data.onboarded) localStorage.setItem('airgap_onboarded', '1');
+    },
+    { settings: merged, onboarded }
+  );
 }
 
 async function seedChat(page, overrides = {}) {

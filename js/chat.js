@@ -666,9 +666,31 @@ function renderWelcomeScreen() {
           <div class="persona-card-desc">Deconstructs topics to fundamental truths using logical reasoning.</div>
         </div>
       </div>
+      ${renderStarterPrompts()}
     </div>
   `;
   lucide.createIcons();
+}
+
+// Chosen during first-run onboarding (M1.4). Clicking one fills the composer so
+// the first message is a decision between three good options, not a blank page.
+function renderStarterPrompts() {
+  const prompts = settings.starterPrompts || [];
+  if (prompts.length === 0) return '';
+  const chips = prompts
+    .map(function (p, i) {
+      return '<button class="starter-prompt" onclick="useStarterPrompt(' + i + ')">' + escapeHtml(p) + '</button>';
+    })
+    .join('');
+  return '<h3 class="welcome-section-title">Or try one of these</h3><div class="starter-prompts">' + chips + '</div>';
+}
+
+function useStarterPrompt(index) {
+  const prompt = (settings.starterPrompts || [])[index];
+  if (!prompt) return;
+  elements.chatTextarea.value = prompt;
+  handleTextareaAutoGrow();
+  elements.chatTextarea.focus();
 }
 
 function selectPersonaForNewChat(personaName) {

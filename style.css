@@ -667,6 +667,109 @@ body {
   width: 100%;
 }
 
+.starter-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+.starter-prompt {
+  background: transparent;
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 1rem;
+  padding: 0.4rem 0.85rem;
+  color: hsl(var(--text-secondary));
+  font-family: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.starter-prompt:hover {
+  border-color: hsl(var(--accent));
+  color: hsl(var(--text-primary));
+}
+
+.onboarding-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--bg-primary) / 0.92);
+  padding: 1.5rem;
+}
+.onboarding-card {
+  background: hsl(var(--bg-secondary));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 460px;
+}
+.onboarding-progress {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--text-muted));
+  margin-bottom: 0.5rem;
+}
+.onboarding-question {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: hsl(var(--text-primary));
+  margin: 0 0 1.25rem;
+}
+.onboarding-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.onboarding-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  background: transparent;
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.onboarding-option:hover { border-color: hsl(var(--accent)); }
+.onboarding-option-selected {
+  border-color: hsl(var(--accent));
+  background: hsl(var(--accent) / 0.1);
+}
+.onboarding-option-label {
+  font-size: 0.9rem;
+  color: hsl(var(--text-primary));
+}
+.onboarding-option-hint {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+}
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.onboarding-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.onboarding-actions .connect-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .personas-grid {
     grid-template-columns: 1fr;
