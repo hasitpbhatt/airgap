@@ -8,6 +8,8 @@
 
 Your own AI agent. Your key. Your browser. Zero backend.
 
+**The only AI agent with no server to leak to.**
+
 An autonomous AI agent that runs entirely in your browser. Bring your own API key, open one HTML file, and get agent capabilities — web search, browsing, RSS, memory, notes, charts — without Docker, npm, or a cloud subscription.
 
 Designed for developers and technical professionals who want full stack visibility, no data leakage to third-party platforms, and no monthly paywall.

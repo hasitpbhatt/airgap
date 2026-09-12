@@ -387,6 +387,8 @@ Everything else in this roadmap is downstream of item 1.
   re-saved obfuscated, so no migration step is needed. Five tests added.
 - **M0.7** — `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.
   Verified rather than changed; no work scheduled.
+- **M1.6** — positioning now leads with the secret: "The only AI agent with no server to
+  leak to" appears above the fold in the README and as the start-screen headline.
 - **M1.1** — the start screen now leads with **Run in your browser** (no key needed) and
   puts bring-your-own-key behind a divider, so the demo no longer asks for a key up front.
   Added `localEngineSupported()`; the local option is hidden on `file://`, where the
