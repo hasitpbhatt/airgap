@@ -239,6 +239,41 @@ function showToast(msg, type) {
   }, 3000);
 }
 
+// Destructive actions should be recoverable, not just confirmed (roadmap M1.5).
+// Gives a longer window than an info toast because the user has to notice the
+// message, decide, and reach for the button.
+function showUndoToast(msg, undoFn) {
+  const container = document.getElementById('toast-container');
+  if (!container) {
+    showToast(msg);
+    return;
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-warn toast-undo';
+  const label = document.createElement('span');
+  label.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'toast-undo-btn';
+  btn.textContent = 'Undo';
+  el.appendChild(label);
+  el.appendChild(btn);
+  container.appendChild(el);
+
+  let undone = false;
+  const dismiss = function () {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(function () { el.remove(); }, 300);
+  };
+  btn.addEventListener('click', function () {
+    if (undone) return;
+    undone = true;
+    try { undoFn(); } catch (e) { console.error('Undo failed', e); }
+    dismiss();
+  });
+  setTimeout(dismiss, 8000);
+}
+
 // Promise-based confirm dialog
 function showConfirm(msg) {
   return new Promise(function (resolve) {

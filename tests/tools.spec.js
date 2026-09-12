@@ -91,6 +91,22 @@ test.describe('Tool execution — global memory', () => {
     });
     expect(r.result).toContain('No data stored');
   });
+
+  test('forget_all offers an undo toast that restores the memories', async ({ page }) => {
+    await page.evaluate(async () => {
+      await executeToolCall({ function: { name: 'remember', arguments: '{"key":"a","value":"1"}' } });
+      await executeToolCall({ function: { name: 'forget_all', arguments: '{}' } });
+    });
+    const undoBtn = page.locator('.toast-undo-btn');
+    await expect(undoBtn).toBeVisible();
+    await undoBtn.click();
+
+    const r = await page.evaluate(() =>
+      executeToolCall({ function: { name: 'recall', arguments: '{"keyword":"a"}' } })
+    );
+    expect(r.value).toBe('1');
+    expect(r.source).toBe('exact_match');
+  });
 });
 
 test.describe('Tool execution — notes', () => {

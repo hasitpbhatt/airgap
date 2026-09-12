@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Undo for destructive memory actions: clearing all memory, from the sidebar panel or from
+  the agent's `forget_all` tool, now offers an Undo toast for 8 seconds instead of being
+  final. The confirm copy no longer claims it cannot be undone
+- Memory panel states how the three stores differ — memory is shared across conversations,
+  notes are saved documents, chat storage belongs to the current conversation
 - Opt-in local timing for time-to-first-magic: `?perf=1` or `localStorage.airgap_perf=1`
   prints init, send and first-response timings to the console. Marks stay in memory —
   no network request, no storage write, no telemetry

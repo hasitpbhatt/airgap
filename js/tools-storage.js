@@ -82,8 +82,19 @@ async function handleForget(args) {
 
 async function handleForgetAll() {
   try {
+    const keys = globalStoreListKeys();
+    const snapshot = {};
+    keys.forEach(function (k) { snapshot[k] = globalStoreGet(k); });
     globalStoreClear();
     refreshMemoryPanelIfOpen();
+    // The agent triggers this with no confirmation step, so the undo toast is
+    // the only thing standing between a stray tool call and total data loss.
+    if (keys.length) {
+      showUndoToast('Agent cleared ' + keys.length + ' memories.', function () {
+        Object.keys(snapshot).forEach(function (k) { globalStoreSet(k, snapshot[k]); });
+        refreshMemoryPanelIfOpen();
+      });
+    }
     return { success: true, message: 'All global memory cleared.' };
   } catch (err) {
     return { error: err.message };

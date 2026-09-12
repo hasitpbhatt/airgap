@@ -392,6 +392,12 @@ Everything else in this roadmap is downstream of item 1.
   re-saved obfuscated, so no migration step is needed. Five tests added.
 - **M0.7** — `ci.yml` already runs `npm run lint` and `npm test` on `main` and every PR.
   Verified rather than changed; no work scheduled.
+- **M1.5** — destructive memory actions are now recoverable. Clearing all memory, whether
+  from the sidebar or from the agent's `forget_all` tool, offers an Undo toast for 8s; the
+  confirm copy no longer says "This cannot be undone". `forget_all` needed this most — the
+  agent can trigger it with no confirmation step at all. The memory panel also states, in
+  one sentence, how memory / notes / chat storage differ, so the three overlapping stores
+  finally have a visible conceptual model.
 - **M1.2** — added opt-in, local-only timing (`?perf=1` or `airgap_perf=1`): marks
   `init-start`, `ui-ready`, `send`, `response-complete`, surfaced via `perfReport()`. No
   network, no storage write, no telemetry. `tests/perf.spec.js` asserts budgets so

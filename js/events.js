@@ -339,9 +339,15 @@ function setupEventListeners() {
     elements.clearMemoryBtn.addEventListener('click', async () => {
       const keys = globalStoreListKeys();
       if (keys.length === 0) return;
-      if (await showConfirm('Delete all ' + keys.length + ' memories? This cannot be undone.')) {
+      if (await showConfirm('Delete all ' + keys.length + ' memories?')) {
+        const snapshot = {};
+        keys.forEach(function (k) { snapshot[k] = globalStoreGet(k); });
         globalStoreClear();
         renderMemoryPanel();
+        showUndoToast('Cleared ' + keys.length + ' memories.', function () {
+          Object.keys(snapshot).forEach(function (k) { globalStoreSet(k, snapshot[k]); });
+          renderMemoryPanel();
+        });
       }
     });
   }

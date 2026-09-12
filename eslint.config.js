@@ -71,6 +71,7 @@ const projectGlobals = {
   tryAutoScroll: 'readonly',
   setupAutoScroll: 'readonly',
   showToast: 'readonly',
+  showUndoToast: 'readonly',
   showConfirm: 'readonly',
   parseProxyResponse: 'readonly',
   // chat.js

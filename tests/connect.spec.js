@@ -41,6 +41,17 @@ test.describe('Connect screen', () => {
     await expect(page.locator('.connect-divider')).toBeVisible();
   });
 
+  test('memory panel explains how the three stores differ', async ({ page }) => {
+    await seedSettings(page, { apiKey: 'sk-test' });
+    await page.goto(INDEX);
+    await page.waitForSelector('#sidebar');
+    await page.locator('#memory-trigger').click();
+    const note = page.locator('.memory-scope-note');
+    await expect(note).toContainText('Memory');
+    await expect(note).toContainText('Notes');
+    await expect(note).toContainText('Chat storage');
+  });
+
   test('local-engine CTA is hidden on file:// where it cannot load', async ({ page }) => {
     await clearStorage(page);
     await page.goto(INDEX);
